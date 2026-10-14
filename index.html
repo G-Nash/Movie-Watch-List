@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Cloud Watchlist</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1f2937; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+        .checkbox-custom {
+            accent-color: #10b981;
+            width: 1.25rem;
+            height: 1.25rem;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        
+        .movie-label { transition: color 0.3s ease, text-decoration-color 0.3s ease; }
+        .watched-text {
+            color: #6b7280;
+            text-decoration: line-through;
+            text-decoration-color: #10b981;
+            text-decoration-thickness: 2px;
+        }
+
+        /* Spinner for loading state */
+        .loader {
+            border: 4px solid #374151;
+            border-top: 4px solid #10b981;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Custom scrollbar for inner genre cards */
+        .card-scroll::-webkit-scrollbar { width: 6px; }
+        .card-scroll::-webkit-scrollbar-track { background: transparent; }
+        .card-scroll::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+        .card-scroll::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen">
+
+    <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        
+        <!-- Header -->
+        <header class="mb-10 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center gap-6">
+            <div>
+                <h1 class="text-4xl font-extrabold tracking-tight text-white mb-2 flex items-center justify-center sm:justify-start gap-3">
+                    Master Watchlist
+                    <span id="sync-status" class="flex h-3 w-3 relative" title="Synced with Cloud">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                    </span>
+                </h1>
+                <p class="text-gray-400">Synced across all your devices via Firebase.</p>
+            </div>
+            
+            <!-- Overall Progress Indicator -->
+            <div class="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700 text-center w-full sm:w-auto min-w-[200px]">
+                <p class="text-sm text-gray-400 uppercase tracking-wide font-semibold mb-1">Completion</p>
+                <div class="text-3xl font-bold text-emerald-400" id="progress-text">0 / 0</div>
+                <div class="w-full bg-gray-700 rounded-full h-2.5 mt-2 overflow-hidden">
+                    <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" id="progress-bar" style="width: 0%"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Add New Movie Form -->
+        <section class="bg-gray-800 rounded-2xl shadow-xl border border-gray-700 p-6 mb-10 transition-transform duration-300 hover:shadow-2xl">
+            <h2 class="text-xl font-bold text-white mb-4">Add to Watchlist</h2>
+            <form id="add-movie-form" class="flex flex-col sm:flex-row gap-4">
+                <input 
+                    type="text" 
+                    id="movie-title" 
+                    placeholder="Enter movie or show title..." 
+                    required
+                    class="flex-1 bg-gray-900 text-white border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent placeholder-gray-500 transition-colors duration-300"
+                >
+                <select 
+                    id="movie-genre" 
+                    required
+                    class="bg-gray-900 text-white border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent cursor-pointer sm:w-48"
+                >
+                    <option value="" disabled selected>Select Genre</option>
+                    <option value="Action & Thriller">Action & Thriller</option>
+                    <option value="Adventure">Adventure</option>
+                    <option value="Comedy">Comedy</option>
+                    <option value="Coming-of-Age">Coming-of-Age</option>
+                    <option value="Drama">Drama</option>
+                    <option value="Romance">Romance</option>
+                    <option value="Sci-Fi">Sci-Fi</option>
+                    <option value="TV Series">TV Series</option>
+                </select>
+                <button 
+                    type="submit" 
+                    id="add-btn"
+                    class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                    </svg>
+                    Add
+                </button>
+            </form>
+        </section>
+
+        <!-- Loading State -->
+        <div id="loading-container" class="flex flex-col items-center justify-center py-20">
+            <div class="loader mb-4"></div>
+            <p class="text-gray-400">Syncing with cloud...</p>
+            <p id="seeding-msg" class="text-sm text-emerald-400 mt-2 hidden">Setting up initial database for the first time...</p>
+        </div>
+
+        <!-- Dynamic Grid for Genres -->
+        <main id="genres-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
+            <!-- Genres and movies injected here via Firebase onSnapshot -->
+        </main>
+
+    </div>
+
+    <!-- FIREBASE MODULE SCRIPT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ============================================================================
+        // 1. FIREBASE CONFIGURATION
+        // ============================================================================
+        // REPLACE the object below with your Firebase Config when deploying to GitHub!
+        const myGitHubFirebaseConfig = {
+            /* PASTE YOUR FIREBASE CONFIG HERE */
+            apiKey: "AIzaSyBlVfPNrfJAazq4wkxJ0rUdipBxUY0ex5Y",
+            authDomain: "movie-watch-list-6e32b.firebaseapp.com",
+            projectId: "movie-watch-list-6e32b",
+            storageBucket: "movie-watch-list-6e32b.firebasestorage.app",
+            messagingSenderId: "1073614869078",
+            appId: "1:1073614869078:web:37802015bdd7866c71a1f7",
+            measurementId: "G-8R4XQ93409"
+
+        };
+        
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : myGitHubFirebaseConfig;
+        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'my-github-watchlist';
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let moviesList = [];
+        let isSeeding = false;
+        const moviesCollectionRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'movies');
+
+        // ============================================================================
+        // 2. INITIAL DATABASE SEED DATA
+        // ============================================================================
+        const initialSeedData = [
+            { title: "10 Things I Hate About You", genre: "Romance" }, { title: "500 Days of Summer", genre: "Romance" }, { title: "Along Came Polly", genre: "Romance" }, { title: "Before Sunrise", genre: "Romance" }, { title: "Blue Valentine", genre: "Romance" }, { title: "Call Me by Your Name", genre: "Romance" }, { title: "Crazy Stupid Love", genre: "Romance" }, { title: "Eternal Sunshine of the Spotless Mind", genre: "Romance" }, { title: "Five Feet Apart", genre: "Romance" }, { title: "How to Lose a Guy in 10 Days", genre: "Romance" }, { title: "In Your Eyes", genre: "Romance" }, { title: "Isn't It Romantic", genre: "Romance" }, { title: "Love Rosie", genre: "Romance" }, { title: "Love Simon", genre: "Romance" }, { title: "Me Before You", genre: "Romance" }, { title: "Monte Carlo", genre: "Romance" }, { title: "My Oxford Year", genre: "Romance" }, { title: "Notting Hill", genre: "Romance" }, { title: "One Day", genre: "Romance" }, { title: "Pride & Prejudice", genre: "Romance" }, { title: "Regretting You", genre: "Romance" }, { title: "The Drama", genre: "Romance" }, { title: "The Invite", genre: "Romance" }, { title: "The Love Hypothesis", genre: "Romance" }, { title: "The Notebook", genre: "Romance" }, { title: "The Time Traveler's Wife", genre: "Romance" }, { title: "Then Came You", genre: "Romance" }, { title: "To All the Boys I've Loved Before", genre: "Romance" }, { title: "Twilight", genre: "Romance" },
+            { title: "Aftersun", genre: "Coming-of-Age" }, { title: "Booksmart", genre: "Coming-of-Age" }, { title: "Boyhood", genre: "Coming-of-Age" }, { title: "Bridge to Terabithia", genre: "Coming-of-Age" }, { title: "Close", genre: "Coming-of-Age" }, { title: "Eighth Grade", genre: "Coming-of-Age" }, { title: "Flipped", genre: "Coming-of-Age" }, { title: "Lady Bird", genre: "Coming-of-Age" }, { title: "Me and Earl and the Dying Girl", genre: "Coming-of-Age" }, { title: "Short Term 12", genre: "Coming-of-Age" }, { title: "Submarine", genre: "Coming-of-Age" }, { title: "The Edge of Seventeen", genre: "Coming-of-Age" }, { title: "The Florida Project", genre: "Coming-of-Age" }, { title: "The Kings of Summer", genre: "Coming-of-Age" }, { title: "The Perks of Being a Wallflower", genre: "Coming-of-Age" }, { title: "The Spectacular Now", genre: "Coming-of-Age" }, { title: "The Way Way Back", genre: "Coming-of-Age" }, { title: "The Worst Person in the World", genre: "Coming-of-Age" },
+            { title: "A Bronx Tale", genre: "Drama" }, { title: "Another Round", genre: "Drama" }, { title: "Atonement", genre: "Drama" }, { title: "Beautiful Boy", genre: "Drama" }, { title: "Dead Poets Society", genre: "Drama" }, { title: "Forrest Gump", genre: "Drama" }, { title: "Good Will Hunting", genre: "Drama" }, { title: "Kill Your Darlings", genre: "Drama" }, { title: "Little Women", genre: "Drama" }, { title: "Lost in Translation", genre: "Drama" }, { title: "Meet Joe Black", genre: "Drama" }, { title: "Parasite", genre: "Drama" }, { title: "Priscilla", genre: "Drama" }, { title: "Requiem for a Dream", genre: "Drama" }, { title: "Shakespeare in Love", genre: "Drama" }, { title: "Small Things Like These", genre: "Drama" }, { title: "The Art of Racing in the Rain", genre: "Drama" }, { title: "The Curious Case of Benjamin Button", genre: "Drama" }, { title: "The Hours", genre: "Drama" }, { title: "We Live in Time", genre: "Drama" }, { title: "Whiplash", genre: "Drama" },
+            { title: "American Psycho", genre: "Action & Thriller" }, { title: "Black Swan", genre: "Action & Thriller" }, { title: "Companion", genre: "Action & Thriller" }, { title: "Coraline", genre: "Action & Thriller" }, { title: "Drive", genre: "Action & Thriller" }, { title: "Heart of the Beast", genre: "Action & Thriller" }, { title: "How to Make a Killing", genre: "Action & Thriller" }, { title: "In Time", genre: "Action & Thriller" }, { title: "Leon The Professional", genre: "Action & Thriller" }, { title: "Nocturnal Animals", genre: "Action & Thriller" }, { title: "Pearl", genre: "Action & Thriller" }, { title: "Ready or Not 2", genre: "Action & Thriller" }, { title: "Resident Evil", genre: "Action & Thriller" }, { title: "Taken", genre: "Action & Thriller" }, { title: "The Autopsy of Jane Doe", genre: "Action & Thriller" }, { title: "The Hunger Games", genre: "Action & Thriller" }, { title: "The Inheritance", genre: "Action & Thriller" }, { title: "The Matrix", genre: "Action & Thriller" }, { title: "Verity", genre: "Action & Thriller" },
+            { title: "1917", genre: "Adventure" }, { title: "All Quiet on the Western Front", genre: "Adventure" }, { title: "Into the Wild", genre: "Adventure" }, { title: "The Secret Life of Walter Mitty", genre: "Adventure" },
+            { title: "21 Jump Street", genre: "Comedy" }, { title: "Home Alone", genre: "Comedy" }, { title: "La La Land", genre: "Comedy" }, { title: "Long Shot", genre: "Comedy" }, { title: "Mamma Mia Here We Go Again", genre: "Comedy" }, { title: "Neighbors", genre: "Comedy" }, { title: "Project X", genre: "Comedy" }, { title: "Red One", genre: "Comedy" }, { title: "Sing", genre: "Comedy" }, { title: "The Big Sick", genre: "Comedy" }, { title: "The Grand Budapest Hotel", genre: "Comedy" }, { title: "The Hangover", genre: "Comedy" }, { title: "The Intern", genre: "Comedy" }, { title: "The World's End", genre: "Comedy" }, { title: "West Side Story", genre: "Comedy" }, { title: "Yesterday", genre: "Comedy" },
+            { title: "2 Hearts", genre: "Sci-Fi" }, { title: "Christopher Nolan Movies", genre: "Sci-Fi" }, { title: "Flow", genre: "Sci-Fi" }, { title: "Miss Peregrines Home for Peculiar Children", genre: "Sci-Fi" }, { title: "Prime Time", genre: "Sci-Fi" },
+            { title: "Alice in Borderland", genre: "TV Series" }, { title: "Anne with an E", genre: "TV Series" }, { title: "Black Mirror", genre: "TV Series" }, { title: "Breaking Bad", genre: "TV Series" }, { title: "Fleabag", genre: "TV Series" }, { title: "Normal People", genre: "TV Series" }, { title: "The 100", genre: "TV Series" }, { title: "The End of the F***ing World", genre: "TV Series" }, { title: "The Vampire Diaries", genre: "TV Series" }
+        ];
+
+        // ============================================================================
+        // 3. AUTHENTICATION & INITIALIZATION
+        // ============================================================================
+        async function initApp() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined') {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                if (!auth.currentUser) return; 
+
+                onSnapshot(moviesCollectionRef, async (snapshot) => {
+                    if (snapshot.empty && !isSeeding) {
+                        isSeeding = true;
+                        document.getElementById('seeding-msg').classList.remove('hidden');
+                        for (const movie of initialSeedData) {
+                            await addDoc(moviesCollectionRef, {
+                                title: movie.title, genre: movie.genre, watched: false, timestamp: Date.now()
+                            });
+                        }
+                        isSeeding = false;
+                        return;
+                    }
+
+                    moviesList = [];
+                    snapshot.forEach(doc => { moviesList.push({ id: doc.id, ...doc.data() }); });
+                    
+                    renderUI();
+                    
+                    document.getElementById('loading-container').classList.add('hidden');
+                    document.getElementById('genres-container').classList.remove('hidden');
+
+                }, (error) => {
+                    console.error("Firestore error: ", error);
+                    // Safe fallback error display
+                    document.getElementById('seeding-msg').innerText = "Database connection error.";
+                    document.getElementById('seeding-msg').classList.remove('hidden');
+                });
+
+            } catch (error) {
+                console.error("Initialization Error:", error);
+            }
+        }
+
+        // ============================================================================
+        // 4. RENDERING & SCROLL PRESERVATION LOGIC
+        // ============================================================================
+        function renderUI() {
+            const container = document.getElementById('genres-container');
+            
+            // --- CRITICAL FIX: PRESERVE SCROLL STATE ---
+            // Save the main window scroll position
+            const currentWindowScrollY = window.scrollY;
+            
+            // Save the scroll position of each individual genre card
+            const cardScrollStates = {};
+            const existingLists = container.querySelectorAll('.card-scroll');
+            existingLists.forEach(list => {
+                const genreName = list.getAttribute('data-genre-name');
+                if (genreName) {
+                    cardScrollStates[genreName] = list.scrollTop;
+                }
+            });
+
+            // Wipe DOM
+            container.innerHTML = ''; 
+
+            const groupedMovies = moviesList.reduce((acc, movie) => {
+                if (!acc[movie.genre]) acc[movie.genre] = [];
+                acc[movie.genre].push(movie);
+                return acc;
+            }, {});
+
+            const sortedGenres = Object.keys(groupedMovies).sort();
+            let totalMovies = 0;
+            let watchedMovies = 0;
+
+            sortedGenres.forEach(genre => {
+                const moviesInGenre = groupedMovies[genre];
+                moviesInGenre.sort((a, b) => a.title.localeCompare(b.title));
+
+                const genreCard = document.createElement('div');
+                genreCard.className = 'bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-5 flex flex-col h-full max-h-[450px] transition-transform duration-300 hover:shadow-xl';
+                
+                const completedInGenre = moviesInGenre.filter(m => m.watched).length;
+                const genreTitle = document.createElement('h3');
+                genreTitle.className = 'text-lg font-bold text-emerald-400 mb-4 border-b border-gray-700 pb-2 flex justify-between items-end';
+                genreTitle.innerHTML = `${genre} <span class="text-sm font-normal text-gray-500">${completedInGenre}/${moviesInGenre.length}</span>`;
+                genreCard.appendChild(genreTitle);
+
+                const list = document.createElement('ul');
+                // Added 'card-scroll' class and data attribute for state tracking
+                list.className = 'space-y-3 overflow-y-auto flex-grow pr-3 card-scroll';
+                list.setAttribute('data-genre-name', genre);
+
+                moviesInGenre.forEach(movie => {
+                    totalMovies++;
+                    if (movie.watched) watchedMovies++;
+
+                    const listItem = document.createElement('li');
+                    listItem.className = 'flex items-start gap-3 group';
+
+                    const isChecked = movie.watched ? 'checked' : '';
+                    const labelClass = movie.watched 
+                        ? 'movie-label watched-text flex-1 select-none pt-0.5 leading-snug cursor-pointer' 
+                        : 'movie-label text-gray-200 flex-1 select-none pt-0.5 leading-snug group-hover:text-white transition-colors cursor-pointer';
+
+                    listItem.innerHTML = `
+                        <input 
+                            type="checkbox" 
+                            id="chk-${movie.id}" 
+                            class="checkbox-custom mt-1 shrink-0 bg-gray-900 border-gray-600 rounded focus:ring-emerald-500 transition duration-150 ease-in-out"
+                            ${isChecked}
+                            data-id="${movie.id}"
+                            data-watched="${movie.watched}"
+                        >
+                        <label for="chk-${movie.id}" class="${labelClass}">
+                            ${movie.title}
+                        </label>
+                    `;
+                    list.appendChild(listItem);
+                });
+
+                genreCard.appendChild(list);
+                container.appendChild(genreCard);
+            });
+
+            // Update Global Progress
+            document.getElementById('progress-text').innerText = `${watchedMovies} / ${totalMovies}`;
+            const percentage = totalMovies === 0 ? 0 : Math.round((watchedMovies / totalMovies) * 100);
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+
+            // --- CRITICAL FIX: RESTORE SCROLL STATE ---
+            // Restore window scroll instantly
+            window.scrollTo(0, currentWindowScrollY);
+            
+            // Restore individual card scrolls
+            const newLists = container.querySelectorAll('.card-scroll');
+            newLists.forEach(list => {
+                const genreName = list.getAttribute('data-genre-name');
+                if (genreName && cardScrollStates[genreName] !== undefined) {
+                    list.scrollTop = cardScrollStates[genreName];
+                }
+            });
+        }
+
+        // ============================================================================
+        // 5. EVENT LISTENERS
+        // ============================================================================
+        
+        document.getElementById('add-movie-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!auth.currentUser) return;
+
+            const titleInput = document.getElementById('movie-title');
+            const genreInput = document.getElementById('movie-genre');
+            const addBtn = document.getElementById('add-btn');
+            
+            const title = titleInput.value.trim();
+            const genre = genreInput.value;
+            
+            if (title && genre) {
+                if (moviesList.some(m => m.title.toLowerCase() === title.toLowerCase())) {
+                    showInputFeedback(titleInput, "Already in watchlist!", true);
+                    return;
+                }
+
+                addBtn.disabled = true;
+                try {
+                    await addDoc(moviesCollectionRef, {
+                        title: title, genre: genre, watched: false, timestamp: Date.now()
+                    });
+                    titleInput.value = '';
+                    genreInput.value = '';
+                    showInputFeedback(titleInput, "Added to cloud!", false);
+                } catch (error) {
+                    console.error("Error adding document: ", error);
+                    showInputFeedback(titleInput, "Error saving.", true);
+                }
+                addBtn.disabled = false;
+            }
+        });
+
+        // Toggle checkbox
+        document.getElementById('genres-container').addEventListener('change', async (e) => {
+            if (e.target && e.target.classList.contains('checkbox-custom')) {
+                const docId = e.target.getAttribute('data-id');
+                const isWatchedStr = e.target.getAttribute('data-watched');
+                const currentlyWatched = isWatchedStr === 'true';
+
+                if(!auth.currentUser || !docId) return;
+
+                const movieRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'movies', docId);
+                try {
+                    await updateDoc(movieRef, {
+                        watched: !currentlyWatched
+                    });
+                } catch (error) {
+                    console.error("Error updating document:", error);
+                    e.target.checked = currentlyWatched; // revert if failed
+                }
+            }
+        });
+
+        function showInputFeedback(element, message, isError) {
+            const originalPlaceholder = element.placeholder;
+            element.value = '';
+            element.placeholder = message;
+            if(isError) element.classList.add('border-red-500', 'placeholder-red-400');
+            else element.classList.add('border-emerald-500', 'placeholder-emerald-400');
+            setTimeout(() => {
+                element.placeholder = originalPlaceholder;
+                element.classList.remove('border-red-500', 'placeholder-red-400', 'border-emerald-500', 'placeholder-emerald-400');
+            }, 2500);
+        }
+
+        initApp();
+
+    </script>
+</body>
+</html>
