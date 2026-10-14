@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Cloud Watchlist</title>
+    <!-- Emerald Film Slate Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2310b981'><path d='M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z'/></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         ::-webkit-scrollbar { width: 8px; }
@@ -129,7 +131,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ============================================================================
         // 1. FIREBASE CONFIGURATION
@@ -144,7 +146,6 @@
             messagingSenderId: "1073614869078",
             appId: "1:1073614869078:web:37802015bdd7866c71a1f7",
             measurementId: "G-8R4XQ93409"
-
         };
         
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : myGitHubFirebaseConfig;
@@ -225,10 +226,8 @@
             const container = document.getElementById('genres-container');
             
             // --- CRITICAL FIX: PRESERVE SCROLL STATE ---
-            // Save the main window scroll position
             const currentWindowScrollY = window.scrollY;
             
-            // Save the scroll position of each individual genre card
             const cardScrollStates = {};
             const existingLists = container.querySelectorAll('.card-scroll');
             existingLists.forEach(list => {
@@ -265,7 +264,6 @@
                 genreCard.appendChild(genreTitle);
 
                 const list = document.createElement('ul');
-                // Added 'card-scroll' class and data attribute for state tracking
                 list.className = 'space-y-3 overflow-y-auto flex-grow pr-3 card-scroll';
                 list.setAttribute('data-genre-name', genre);
 
@@ -274,7 +272,7 @@
                     if (movie.watched) watchedMovies++;
 
                     const listItem = document.createElement('li');
-                    listItem.className = 'flex items-start gap-3 group';
+                    listItem.className = 'flex items-start justify-between gap-3 group';
 
                     const isChecked = movie.watched ? 'checked' : '';
                     const labelClass = movie.watched 
@@ -282,116 +280,6 @@
                         : 'movie-label text-gray-200 flex-1 select-none pt-0.5 leading-snug group-hover:text-white transition-colors cursor-pointer';
 
                     listItem.innerHTML = `
-                        <input 
-                            type="checkbox" 
-                            id="chk-${movie.id}" 
-                            class="checkbox-custom mt-1 shrink-0 bg-gray-900 border-gray-600 rounded focus:ring-emerald-500 transition duration-150 ease-in-out"
-                            ${isChecked}
-                            data-id="${movie.id}"
-                            data-watched="${movie.watched}"
-                        >
-                        <label for="chk-${movie.id}" class="${labelClass}">
-                            ${movie.title}
-                        </label>
-                    `;
-                    list.appendChild(listItem);
-                });
-
-                genreCard.appendChild(list);
-                container.appendChild(genreCard);
-            });
-
-            // Update Global Progress
-            document.getElementById('progress-text').innerText = `${watchedMovies} / ${totalMovies}`;
-            const percentage = totalMovies === 0 ? 0 : Math.round((watchedMovies / totalMovies) * 100);
-            document.getElementById('progress-bar').style.width = `${percentage}%`;
-
-            // --- CRITICAL FIX: RESTORE SCROLL STATE ---
-            // Restore window scroll instantly
-            window.scrollTo(0, currentWindowScrollY);
-            
-            // Restore individual card scrolls
-            const newLists = container.querySelectorAll('.card-scroll');
-            newLists.forEach(list => {
-                const genreName = list.getAttribute('data-genre-name');
-                if (genreName && cardScrollStates[genreName] !== undefined) {
-                    list.scrollTop = cardScrollStates[genreName];
-                }
-            });
-        }
-
-        // ============================================================================
-        // 5. EVENT LISTENERS
-        // ============================================================================
-        
-        document.getElementById('add-movie-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if(!auth.currentUser) return;
-
-            const titleInput = document.getElementById('movie-title');
-            const genreInput = document.getElementById('movie-genre');
-            const addBtn = document.getElementById('add-btn');
-            
-            const title = titleInput.value.trim();
-            const genre = genreInput.value;
-            
-            if (title && genre) {
-                if (moviesList.some(m => m.title.toLowerCase() === title.toLowerCase())) {
-                    showInputFeedback(titleInput, "Already in watchlist!", true);
-                    return;
-                }
-
-                addBtn.disabled = true;
-                try {
-                    await addDoc(moviesCollectionRef, {
-                        title: title, genre: genre, watched: false, timestamp: Date.now()
-                    });
-                    titleInput.value = '';
-                    genreInput.value = '';
-                    showInputFeedback(titleInput, "Added to cloud!", false);
-                } catch (error) {
-                    console.error("Error adding document: ", error);
-                    showInputFeedback(titleInput, "Error saving.", true);
-                }
-                addBtn.disabled = false;
-            }
-        });
-
-        // Toggle checkbox
-        document.getElementById('genres-container').addEventListener('change', async (e) => {
-            if (e.target && e.target.classList.contains('checkbox-custom')) {
-                const docId = e.target.getAttribute('data-id');
-                const isWatchedStr = e.target.getAttribute('data-watched');
-                const currentlyWatched = isWatchedStr === 'true';
-
-                if(!auth.currentUser || !docId) return;
-
-                const movieRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'movies', docId);
-                try {
-                    await updateDoc(movieRef, {
-                        watched: !currentlyWatched
-                    });
-                } catch (error) {
-                    console.error("Error updating document:", error);
-                    e.target.checked = currentlyWatched; // revert if failed
-                }
-            }
-        });
-
-        function showInputFeedback(element, message, isError) {
-            const originalPlaceholder = element.placeholder;
-            element.value = '';
-            element.placeholder = message;
-            if(isError) element.classList.add('border-red-500', 'placeholder-red-400');
-            else element.classList.add('border-emerald-500', 'placeholder-emerald-400');
-            setTimeout(() => {
-                element.placeholder = originalPlaceholder;
-                element.classList.remove('border-red-500', 'placeholder-red-400', 'border-emerald-500', 'placeholder-emerald-400');
-            }, 2500);
-        }
-
-        initApp();
-
-    </script>
-</body>
-</html>
+                        <div class="flex items-start gap-3 flex-1 min-w-0">
+                            <input 
+                                type="checkbox"
