@@ -67,6 +67,20 @@
             background-color: #1c2220;
         }
 
+        /* iOS Spotlight Search Bar */
+        .ios-spotlight {
+            background: rgba(19, 23, 22, 0.92);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+            transition: all 0.22s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .ios-spotlight:focus-within {
+            border-color: var(--apple-green);
+            box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.18), inset 0 1px 2px rgba(0, 0, 0, 0.35);
+            background: rgba(24, 30, 28, 0.98);
+        }
+
         /* iOS Reminders-Style Circular Checkbox */
         .checkbox-custom {
             appearance: none;
@@ -233,13 +247,15 @@
             </form>
         </section>
 
-        <!-- iOS Segmented Control + Pick Random Button -->
-        <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-8">
-            <div class="inline-flex bg-[#131716] p-1 rounded-full border border-white/[0.08] w-full sm:w-auto">
+        <!-- Control Bar: Segmented Control + iOS Spotlight Search + Surprise Me -->
+        <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3.5 mb-8">
+            
+            <!-- iOS Segmented Control -->
+            <div class="inline-flex bg-[#131716] p-1 rounded-full border border-white/[0.08] w-full lg:w-auto shrink-0">
                 <button 
                     type="button" 
                     id="tab-movie" 
-                    class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 bg-[#232b28] text-white shadow-sm border border-white/[0.08]"
+                    class="flex-1 lg:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 bg-[#232b28] text-white shadow-sm border border-white/[0.08]"
                 >
                     <span>Movies</span>
                     <span id="badge-movie" class="px-2 py-0.5 text-[11px] rounded-full bg-[#30d158]/20 text-[#30d158] tabular-nums">0/0</span>
@@ -247,24 +263,58 @@
                 <button 
                     type="button" 
                     id="tab-series" 
-                    class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 text-[#ebebf5]/60 hover:text-white border border-transparent"
+                    class="flex-1 lg:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 text-[#ebebf5]/60 hover:text-white border border-transparent"
                 >
                     <span>TV Series</span>
                     <span id="badge-series" class="px-2 py-0.5 text-[11px] rounded-full bg-white/[0.06] text-[#ebebf5]/60 tabular-nums">0/0</span>
                 </button>
             </div>
 
-            <!-- Apple Tinted Secondary Action Button -->
-            <button 
-                type="button" 
-                id="pick-random-btn"
-                class="bg-[#161c1a] hover:bg-[#1d2623] active:scale-[0.98] text-[#30d158] border border-[#30d158]/25 font-semibold text-xs sm:text-sm py-2.5 px-5 rounded-full shadow-sm transition-all duration-200 flex items-center justify-center gap-2 group"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                </svg>
-                <span id="pick-random-label">Surprise Me (Movies)</span>
-            </button>
+            <!-- Spotlight Search + Random Button Group -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 lg:max-w-xl lg:justify-end">
+                
+                <!-- iOS Spotlight Search Bar -->
+                <div class="ios-spotlight relative flex items-center flex-1 rounded-full px-3.5 py-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#ebebf5]/40 shrink-0 mr-2.5 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103.5 10.5a7.5 7.5 0 0013.15 6.15z" />
+                    </svg>
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        placeholder="Search titles or genres..." 
+                        autocomplete="off"
+                        class="bg-transparent text-xs sm:text-sm text-white placeholder-[#ebebf5]/35 focus:outline-none w-full pr-14"
+                    >
+                    <!-- Keyboard Shortcut Badge -->
+                    <kbd id="search-kbd" class="hidden sm:inline-block absolute right-3.5 px-1.5 py-0.5 text-[10px] font-medium text-[#ebebf5]/40 bg-white/[0.05] rounded border border-white/[0.08] pointer-events-none">
+                        ⌘K
+                    </kbd>
+                    <!-- iOS Clear Button -->
+                    <button 
+                        type="button" 
+                        id="clear-search-btn" 
+                        class="hidden absolute right-3 w-5 h-5 rounded-full bg-white/[0.14] hover:bg-white/[0.24] text-[#050606] items-center justify-center transition-colors"
+                        aria-label="Clear search"
+                        title="Clear search (Esc)"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 stroke-[2.8]" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Apple Tinted Secondary Action Button -->
+                <button 
+                    type="button" 
+                    id="pick-random-btn"
+                    class="bg-[#161c1a] hover:bg-[#1d2623] active:scale-[0.98] text-[#30d158] border border-[#30d158]/25 font-semibold text-xs sm:text-sm py-2.5 px-5 rounded-full shadow-sm transition-all duration-200 flex items-center justify-center gap-2 group shrink-0"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
+                    <span id="pick-random-label">Surprise Me (Movies)</span>
+                </button>
+            </div>
         </div>
 
         <!-- Loading State -->
@@ -361,6 +411,7 @@
 
         let moviesList = [];
         let activeTab = 'movie';
+        let searchQuery = '';
         let currentRandomPick = null;
         let isMigratingOrSeeding = false;
         let shuffleInterval = null;
@@ -726,14 +777,26 @@
         }
 
         // ============================================================================
-        // 4. RENDERING, 2-SECOND DELAYED SORT & TAB SWITCHING
+        // 4. RENDERING, SPOTLIGHT FILTER, 2-SECOND DELAYED SORT & TAB SWITCHING
         // ============================================================================
         function getEffectiveSortWatched(item) {
-            // If the item was checked/unchecked within the last 2 seconds, keep its previous sort position
             if (recentlyToggledSortState.has(item.id)) {
                 return recentlyToggledSortState.get(item.id).sortWatched;
             }
             return Boolean(item.watched);
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[m]));
+        }
+
+        function highlightMatch(text, query) {
+            if (!query) return escapeHtml(text);
+            const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const regex = new RegExp(`(${escapedQuery})`, 'gi');
+            return escapeHtml(text).replace(regex, '<mark class="bg-[#30d158]/25 text-[#30d158] rounded px-0.5 font-medium">$1</mark>');
         }
 
         function setTab(tabName) {
@@ -749,17 +812,17 @@
             const pickRandomLabel = document.getElementById('pick-random-label');
 
             if (tabName === 'movie') {
-                tabMovieBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 bg-[#232b28] text-white shadow-sm border border-white/[0.08]';
+                tabMovieBtn.className = 'flex-1 lg:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 bg-[#232b28] text-white shadow-sm border border-white/[0.08]';
                 badgeMovie.className = 'px-2 py-0.5 text-[11px] rounded-full bg-[#30d158]/20 text-[#30d158] tabular-nums';
                 
-                tabSeriesBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 text-[#ebebf5]/60 hover:text-white border border-transparent';
+                tabSeriesBtn.className = 'flex-1 lg:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 text-[#ebebf5]/60 hover:text-white border border-transparent';
                 badgeSeries.className = 'px-2 py-0.5 text-[11px] rounded-full bg-white/[0.06] text-[#ebebf5]/60 tabular-nums';
                 pickRandomLabel.innerText = 'Surprise Me (Movies)';
             } else {
-                tabSeriesBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 bg-[#232b28] text-white shadow-sm border border-white/[0.08]';
+                tabSeriesBtn.className = 'flex-1 lg:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 bg-[#232b28] text-white shadow-sm border border-white/[0.08]';
                 badgeSeries.className = 'px-2 py-0.5 text-[11px] rounded-full bg-[#30d158]/20 text-[#30d158] tabular-nums';
                 
-                tabMovieBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 text-[#ebebf5]/60 hover:text-white border border-transparent';
+                tabMovieBtn.className = 'flex-1 lg:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 text-[#ebebf5]/60 hover:text-white border border-transparent';
                 badgeMovie.className = 'px-2 py-0.5 text-[11px] rounded-full bg-white/[0.06] text-[#ebebf5]/60 tabular-nums';
                 pickRandomLabel.innerText = 'Surprise Me (Series)';
             }
@@ -791,22 +854,69 @@
             document.getElementById('badge-series').innerText = `${watchedSeriesCount}/${allSeries.length}`;
 
             const itemsForActiveTab = activeTab === 'movie' ? allMovies : allSeries;
+            const totalInTab = itemsForActiveTab.length;
+            const watchedInTab = itemsForActiveTab.filter(m => m.watched).length;
 
-            const groupedItems = itemsForActiveTab.reduce((acc, item) => {
+            // Update Top Nav Progress Bar (always reflects full tab progress)
+            document.getElementById('progress-label').innerText = activeTab === 'movie' ? 'Movies' : 'Series';
+            document.getElementById('progress-text').innerText = `${watchedInTab} / ${totalInTab}`;
+            const percentage = totalInTab === 0 ? 0 : Math.round((watchedInTab / totalInTab) * 100);
+            document.getElementById('progress-bar').style.width = `${percentage}%`;
+
+            // Apply Spotlight Search Filter (matches title or genre)
+            const normalizedQuery = searchQuery.trim().toLowerCase();
+            const filteredItems = normalizedQuery
+                ? itemsForActiveTab.filter(item =>
+                    item.title.toLowerCase().includes(normalizedQuery) ||
+                    item.genre.toLowerCase().includes(normalizedQuery)
+                )
+                : itemsForActiveTab;
+
+            // Empty Search State
+            if (filteredItems.length === 0 && normalizedQuery) {
+                const otherTabItems = activeTab === 'movie' ? allSeries : allMovies;
+                const otherTabMatches = otherTabItems.filter(item =>
+                    item.title.toLowerCase().includes(normalizedQuery) ||
+                    item.genre.toLowerCase().includes(normalizedQuery)
+                ).length;
+
+                const emptyState = document.createElement('div');
+                emptyState.className = 'col-span-full ios-tinted-card p-10 text-center flex flex-col items-center justify-center';
+                emptyState.innerHTML = `
+                    <div class="w-12 h-12 rounded-2xl bg-white/[0.05] border border-white/[0.08] flex items-center justify-center mb-3 text-[#ebebf5]/40">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 103.5 10.5a7.5 7.5 0 0013.15 6.15z" />
+                        </svg>
+                    </div>
+                    <p class="text-base font-semibold text-white mb-1">No ${activeTab === 'movie' ? 'movies' : 'series'} found for "${escapeHtml(searchQuery.trim())}"</p>
+                    <p class="text-xs text-[#ebebf5]/50 mb-4">Try searching for another title or genre.</p>
+                    ${otherTabMatches > 0 ? `
+                        <button type="button" id="switch-tab-search-btn" class="px-4 py-2 rounded-full text-xs font-semibold bg-[#30d158]/15 text-[#30d158] border border-[#30d158]/30 hover:bg-[#30d158]/25 transition-colors">
+                            View ${otherTabMatches} match${otherTabMatches > 1 ? 'es' : ''} in${activeTab === 'movie' ? 'TV Series' : 'Movies'} →
+                        </button>
+                    ` : ''}
+                `;
+                container.appendChild(emptyState);
+
+                const switchBtn = document.getElementById('switch-tab-search-btn');
+                if (switchBtn) {
+                    switchBtn.addEventListener('click', () => setTab(activeTab === 'movie' ? 'series' : 'movie'));
+                }
+                return;
+            }
+
+            const groupedItems = filteredItems.reduce((acc, item) => {
                 if (!acc[item.genre]) acc[item.genre] = [];
                 acc[item.genre].push(item);
                 return acc;
             }, {});
 
             const sortedGenres = Object.keys(groupedItems).sort();
-            let totalInTab = 0;
-            let watchedInTab = 0;
 
             sortedGenres.forEach(genre => {
                 const itemsInGenre = groupedItems[genre];
 
                 // Sort: Unwatched at top (alphabetical), Watched at bottom (alphabetical)
-                // Respects the 2-second delayed sort lock for recently clicked items
                 itemsInGenre.sort((a, b) => {
                     const aWatchedSort = getEffectiveSortWatched(a);
                     const bWatchedSort = getEffectiveSortWatched(b);
@@ -823,7 +933,7 @@
                 const genreTitle = document.createElement('h3');
                 genreTitle.className = 'text-base font-semibold tracking-tight text-white mb-3.5 border-b border-white/[0.07] pb-3 flex justify-between items-center';
                 genreTitle.innerHTML = `
-                    <span>${genre}</span>
+                    <span>${highlightMatch(genre, normalizedQuery)}</span>
                     <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-white/[0.06] text-[#ebebf5]/60 tabular-nums">${completedInGenre} / ${itemsInGenre.length}</span>
                 `;
                 genreCard.appendChild(genreTitle);
@@ -833,9 +943,6 @@
                 list.setAttribute('data-genre-name', genre);
 
                 itemsInGenre.forEach(item => {
-                    totalInTab++;
-                    if (item.watched) watchedInTab++;
-
                     const isPendingMove = recentlyToggledSortState.has(item.id);
                     const listItem = document.createElement('li');
                     listItem.id = `item-row-${item.id}`;
@@ -857,7 +964,7 @@
                                 data-watched="${item.watched}"
                             >
                             <label for="chk-${item.id}" class="${labelClass} break-words">
-                                ${item.title}
+                                ${highlightMatch(item.title, normalizedQuery)}
                             </label>
                         </div>
                         <button 
@@ -865,7 +972,7 @@
                             class="delete-btn text-[#ebebf5]/30 hover:text-red-400 opacity-60 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-150 p-1 rounded-lg hover:bg-white/[0.06] shrink-0"
                             data-id="${item.id}"
                             title="Remove from watchlist"
-                            aria-label="Remove ${item.title}"
+                            aria-label="Remove ${escapeHtml(item.title)}"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -878,11 +985,6 @@
                 genreCard.appendChild(list);
                 container.appendChild(genreCard);
             });
-
-            document.getElementById('progress-label').innerText = activeTab === 'movie' ? 'Movies' : 'Series';
-            document.getElementById('progress-text').innerText = `${watchedInTab} / ${totalInTab}`;
-            const percentage = totalInTab === 0 ? 0 : Math.round((watchedInTab / totalInTab) * 100);
-            document.getElementById('progress-bar').style.width = `${percentage}%`;
 
             window.scrollTo(0, currentWindowScrollY);
             const newLists = container.querySelectorAll('.card-scroll');
@@ -952,8 +1054,61 @@
         }
 
         // ============================================================================
-        // 6. EVENT LISTENERS (INCLUDING 2-SEC DELAYED MOVE TO BOTTOM)
+        // 6. EVENT LISTENERS (SPOTLIGHT SEARCH, SHORTCUTS & 2-SEC DELAYED MOVE)
         // ============================================================================
+        const searchInput = document.getElementById('search-input');
+        const clearSearchBtn = document.getElementById('clear-search-btn');
+        const searchKbd = document.getElementById('search-kbd');
+
+        function updateSearchUI() {
+            searchQuery = searchInput.value;
+            if (searchQuery.length > 0) {
+                clearSearchBtn.classList.remove('hidden');
+                clearSearchBtn.classList.add('flex');
+                searchKbd.classList.add('hidden');
+                searchKbd.classList.remove('sm:inline-block');
+            } else {
+                clearSearchBtn.classList.add('hidden');
+                clearSearchBtn.classList.remove('flex');
+                searchKbd.classList.remove('hidden');
+                searchKbd.classList.add('sm:inline-block');
+            }
+            renderUI();
+        }
+
+        searchInput.addEventListener('input', updateSearchUI);
+
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            updateSearchUI();
+            searchInput.focus();
+        });
+
+        // Global Keyboard Shortcuts: Cmd/Ctrl+K or '/' to focus search, Esc to clear
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                e.preventDefault();
+                searchInput.focus();
+                searchInput.select();
+                return;
+            }
+            if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT') {
+                e.preventDefault();
+                searchInput.focus();
+                return;
+            }
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('random-modal');
+                if (!modal.classList.contains('hidden')) {
+                    closeRandomModal();
+                } else if (document.activeElement === searchInput || searchQuery.length > 0) {
+                    searchInput.value = '';
+                    updateSearchUI();
+                    searchInput.blur();
+                }
+            }
+        });
+
         document.getElementById('tab-movie').addEventListener('click', () => setTab('movie'));
         document.getElementById('tab-series').addEventListener('click', () => setTab('series'));
 
@@ -964,12 +1119,14 @@
         document.getElementById('random-modal').addEventListener('click', (e) => {
             if (e.target.id === 'random-modal') closeRandomModal();
         });
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeRandomModal();
-        });
 
         document.getElementById('locate-item-btn').addEventListener('click', () => {
             if (!currentRandomPick) return;
+            // Clear active search filter if the picked item is currently hidden by search
+            if (searchQuery.trim() !== '') {
+                searchInput.value = '';
+                updateSearchUI();
+            }
             const targetRow = document.getElementById(`item-row-${currentRandomPick.id}`);
             closeRandomModal();
             if (targetRow) {
@@ -1045,7 +1202,6 @@
 
                 if (!auth.currentUser || !docId) return;
 
-                // Lock the item's current sort position for 2 seconds so it doesn't jump immediately
                 if (recentlyToggledSortState.has(docId)) {
                     clearTimeout(recentlyToggledSortState.get(docId).timerId);
                 } else {
@@ -1057,7 +1213,7 @@
 
                 const timerId = setTimeout(() => {
                     recentlyToggledSortState.delete(docId);
-                    renderUI(); // Re-render after 2 seconds to move item to the bottom/top
+                    renderUI();
                 }, 2000);
 
                 recentlyToggledSortState.get(docId).timerId = timerId;
