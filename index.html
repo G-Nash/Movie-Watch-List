@@ -1,104 +1,207 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Cloud Watchlist</title>
-    <!-- Emerald Film Slate Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2310b981'><path d='M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z'/></svg>">
+    <title>Watchlist</title>
+    <!-- Apple-Inspired Emerald Film Slate Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2330d158'><path d='M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z'/></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1f2937; }
-        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-
-        .checkbox-custom {
-            accent-color: #10b981;
-            width: 1.25rem;
-            height: 1.25rem;
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
+        :root {
+            --apple-bg: #050606;
+            --apple-card: #111514;
+            --apple-card-elevated: #171c1a;
+            --apple-border: rgba(255, 255, 255, 0.08);
+            --apple-border-highlight: rgba(48, 209, 88, 0.28);
+            --apple-green: #30d158;
+            --apple-text-primary: #ffffff;
+            --apple-text-secondary: rgba(235, 235, 245, 0.65);
+            --apple-text-tertiary: rgba(235, 235, 245, 0.38);
         }
-        
-        .movie-label { transition: color 0.3s ease, text-decoration-color 0.3s ease; }
+
+        body {
+            background-color: var(--apple-bg);
+            background-image: radial-gradient(ellipse 85% 45% at 50% -10%, rgba(48, 209, 88, 0.12), rgba(16, 185, 129, 0.03), transparent);
+            color: var(--apple-text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Subtle iOS Dark Scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.28); }
+
+        .card-scroll::-webkit-scrollbar { width: 4px; }
+        .card-scroll::-webkit-scrollbar-track { background: transparent; }
+        .card-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 9999px; }
+        .card-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.24); }
+
+        /* Tinted Liquid Glass Surface (Low Transparency, Rich Tint) */
+        .ios-tinted-card {
+            background: linear-gradient(180deg, rgba(24, 30, 28, 0.96) 0%, rgba(16, 20, 19, 0.98) 100%);
+            border: 1px solid var(--apple-border);
+            box-shadow: 0 14px 34px -6px rgba(0, 0, 0, 0.65), inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
+            border-radius: 22px;
+        }
+
+        .ios-tinted-card:hover {
+            border-color: rgba(255, 255, 255, 0.13);
+        }
+
+        .ios-input {
+            background-color: #181d1b;
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 14px;
+            color: #ffffff;
+            transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .ios-input:focus {
+            outline: none;
+            border-color: var(--apple-green);
+            box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.2);
+            background-color: #1c2220;
+        }
+
+        /* iOS Reminders-Style Circular Checkbox */
+        .checkbox-custom {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 1.35rem;
+            height: 1.35rem;
+            border: 1.75px solid rgba(235, 235, 245, 0.35);
+            border-radius: 9999px;
+            background-color: rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            display: inline-grid;
+            place-content: center;
+            transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .checkbox-custom:hover {
+            border-color: var(--apple-green);
+        }
+
+        .checkbox-custom::before {
+            content: "";
+            width: 0.65rem;
+            height: 0.65rem;
+            transform: scale(0);
+            transition: 0.18s transform cubic-bezier(0.34, 1.56, 0.64, 1);
+            background-color: #000000;
+            clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+        }
+
+        .checkbox-custom:checked {
+            background-color: var(--apple-green);
+            border-color: var(--apple-green);
+            transform: scale(1.03);
+        }
+
+        .checkbox-custom:checked::before {
+            transform: scale(1);
+        }
+
+        .movie-label {
+            transition: color 0.25s ease, opacity 0.25s ease;
+            letter-spacing: -0.01em;
+        }
+
         .watched-text {
-            color: #6b7280;
+            color: var(--apple-text-tertiary);
             text-decoration: line-through;
-            text-decoration-color: #10b981;
-            text-decoration-thickness: 2px;
+            text-decoration-color: rgba(48, 209, 88, 0.55);
+            text-decoration-thickness: 1.5px;
+        }
+
+        /* Subtle indicator while item waits 2s before moving to bottom */
+        .pending-move {
+            background-color: rgba(48, 209, 88, 0.08);
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
         }
 
         /* Spinner for loading state */
         .loader {
-            border: 4px solid #374151;
-            border-top: 4px solid #10b981;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--apple-green);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
+            width: 36px;
+            height: 36px;
+            animation: spin 0.85s linear infinite;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Custom scrollbar for inner genre cards */
-        .card-scroll::-webkit-scrollbar { width: 6px; }
-        .card-scroll::-webkit-scrollbar-track { background: transparent; }
-        .card-scroll::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
-        .card-scroll::-webkit-scrollbar-thumb:hover { background: #4b5563; }
 
         /* Highlight pulse when locating a randomly picked item */
         @keyframes emeraldPulse {
             0%, 100% { background-color: transparent; }
-            25%, 75% { background-color: rgba(16, 185, 129, 0.25); box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15); }
+            25%, 75% { background-color: rgba(48, 209, 88, 0.2); box-shadow: 0 0 0 3px rgba(48, 209, 88, 0.15); }
         }
         .locate-highlight {
             animation: emeraldPulse 2.2s ease-in-out;
-            border-radius: 0.5rem;
+            border-radius: 0.65rem;
         }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 font-sans min-h-screen">
+<body class="min-h-screen selection:bg-emerald-500/30 selection:text-emerald-200">
+
+    <!-- Apple-Style Sticky Tinted Top Bar -->
+    <nav class="sticky top-0 z-30 border-b border-white/[0.07] bg-[#080a09]/90 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-b from-[#30d158]/25 to-[#30d158]/10 border border-[#30d158]/30 flex items-center justify-center shadow-inner">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#30d158]" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="font-bold text-lg tracking-tight text-white">Watchlist</span>
+                        <span id="sync-status" class="flex h-2 w-2 relative" title="iCloud / Firebase Synced">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#30d158] opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-[#30d158]"></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compact Pill Progress Indicator -->
+            <div class="flex items-center gap-3 bg-[#141817] px-3.5 py-1.5 rounded-full border border-white/[0.08]">
+                <span id="progress-label" class="text-xs font-medium text-[#ebebf5]/60 hidden sm:inline">Movies</span>
+                <div class="w-20 sm:w-28 bg-white/10 rounded-full h-1.5 overflow-hidden">
+                    <div class="bg-[#30d158] h-1.5 rounded-full transition-all duration-500" id="progress-bar" style="width: 0%"></div>
+                </div>
+                <span class="text-xs font-semibold text-[#30d158] tabular-nums" id="progress-text">0 / 0</span>
+            </div>
+        </div>
+    </nav>
 
     <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         
-        <!-- Header -->
-        <header class="mb-8 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center gap-6">
-            <div>
-                <h1 class="text-4xl font-extrabold tracking-tight text-white mb-2 flex items-center justify-center sm:justify-start gap-3">
-                    Master Watchlist
-                    <span id="sync-status" class="flex h-3 w-3 relative" title="Synced with Cloud">
-                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                    </span>
-                </h1>
-                <p class="text-gray-400">Synced across all your devices via Firebase.</p>
-            </div>
-            
-            <!-- Active Tab Progress Indicator -->
-            <div class="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700 text-center w-full sm:w-auto min-w-[220px]">
-                <p id="progress-label" class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-1">Movies Completion</p>
-                <div class="text-3xl font-bold text-emerald-400" id="progress-text">0 / 0</div>
-                <div class="w-full bg-gray-700 rounded-full h-2.5 mt-2 overflow-hidden">
-                    <div class="bg-emerald-500 h-2.5 rounded-full transition-all duration-500" id="progress-bar" style="width: 0%"></div>
-                </div>
-            </div>
+        <!-- Hero Title -->
+        <header class="mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-1">Library</h1>
+            <p class="text-sm text-[#ebebf5]/60">Checked titles automatically move to the bottom after 2 seconds.</p>
         </header>
 
-        <!-- Add New Item Form -->
-        <section class="bg-gray-800 rounded-2xl shadow-xl border border-gray-700 p-6 mb-8 transition-transform duration-300 hover:shadow-2xl">
-            <h2 class="text-xl font-bold text-white mb-4">Add to Watchlist</h2>
-            <form id="add-movie-form" class="flex flex-col md:flex-row gap-4">
+        <!-- Add New Item Form (Tinted Card) -->
+        <section class="ios-tinted-card p-5 sm:p-6 mb-8">
+            <form id="add-movie-form" class="flex flex-col md:flex-row gap-3">
                 <input 
                     type="text" 
                     id="movie-title" 
-                    placeholder="Enter movie or series title..." 
+                    placeholder="Add a movie or series..." 
                     required
-                    class="flex-1 bg-gray-900 text-white border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent placeholder-gray-500 transition-colors duration-300"
+                    class="ios-input flex-1 px-4 py-3 text-sm placeholder-[#ebebf5]/35"
                 >
                 <select 
                     id="movie-type" 
                     required
-                    class="bg-gray-900 text-white border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent cursor-pointer md:w-40"
+                    class="ios-input px-4 py-3 text-sm cursor-pointer md:w-40"
                 >
                     <option value="movie">🎬 Movie</option>
                     <option value="series">📺 TV Series</option>
@@ -106,9 +209,9 @@
                 <select 
                     id="movie-genre" 
                     required
-                    class="bg-gray-900 text-white border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent cursor-pointer md:w-48"
+                    class="ios-input px-4 py-3 text-sm cursor-pointer md:w-48"
                 >
-                    <option value="" disabled selected>Select Genre</option>
+                    <option value="" disabled selected>Genre</option>
                     <option value="Action & Thriller">Action & Thriller</option>
                     <option value="Adventure">Adventure</option>
                     <option value="Comedy">Comedy</option>
@@ -120,113 +223,111 @@
                 <button 
                     type="submit" 
                     id="add-btn"
-                    class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-6 rounded-lg transition-colors duration-200 shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="bg-[#30d158] hover:bg-[#28c04d] active:scale-[0.98] text-black font-semibold text-sm py-3 px-6 rounded-[14px] transition-all duration-150 shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 stroke-[2.5]" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
                     </svg>
-                    Add
+                    <span>Add</span>
                 </button>
             </form>
         </section>
 
-        <!-- Exclusive Tabs Navigation + Pick Random Button -->
+        <!-- iOS Segmented Control + Pick Random Button -->
         <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4 mb-8">
-            <div class="inline-flex bg-gray-800 p-1.5 rounded-xl border border-gray-700 shadow-inner w-full sm:w-auto">
+            <div class="inline-flex bg-[#131716] p-1 rounded-full border border-white/[0.08] w-full sm:w-auto">
                 <button 
                     type="button" 
                     id="tab-movie" 
-                    class="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 bg-emerald-600 text-white shadow-md"
+                    class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 bg-[#232b28] text-white shadow-sm border border-white/[0.08]"
                 >
-                    <span>🎬 Movies</span>
-                    <span id="badge-movie" class="px-2 py-0.5 text-xs rounded-full bg-emerald-800 text-emerald-100">0/0</span>
+                    <span>Movies</span>
+                    <span id="badge-movie" class="px-2 py-0.5 text-[11px] rounded-full bg-[#30d158]/20 text-[#30d158] tabular-nums">0/0</span>
                 </button>
                 <button 
                     type="button" 
                     id="tab-series" 
-                    class="flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 text-gray-400 hover:text-white"
+                    class="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 text-[#ebebf5]/60 hover:text-white border border-transparent"
                 >
-                    <span>📺 TV Series</span>
-                    <span id="badge-series" class="px-2 py-0.5 text-xs rounded-full bg-gray-700 text-gray-300">0/0</span>
+                    <span>TV Series</span>
+                    <span id="badge-series" class="px-2 py-0.5 text-[11px] rounded-full bg-white/[0.06] text-[#ebebf5]/60 tabular-nums">0/0</span>
                 </button>
             </div>
 
-            <!-- Pick Random Button -->
+            <!-- Apple Tinted Secondary Action Button -->
             <button 
                 type="button" 
                 id="pick-random-btn"
-                class="bg-gray-800 hover:bg-gray-700 text-emerald-400 hover:text-emerald-300 border border-emerald-500/40 hover:border-emerald-400 font-bold py-2.5 px-5 rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2.5 group"
+                class="bg-[#161c1a] hover:bg-[#1d2623] active:scale-[0.98] text-[#30d158] border border-[#30d158]/25 font-semibold text-xs sm:text-sm py-2.5 px-5 rounded-full shadow-sm transition-all duration-200 flex items-center justify-center gap-2 group"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transition-transform duration-300 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform duration-300 group-hover:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                 </svg>
-                <span id="pick-random-label">Pick Random Movie</span>
+                <span id="pick-random-label">Surprise Me (Movies)</span>
             </button>
         </div>
 
         <!-- Loading State -->
         <div id="loading-container" class="flex flex-col items-center justify-center py-20">
             <div class="loader mb-4"></div>
-            <p class="text-gray-400">Syncing with cloud...</p>
-            <p id="seeding-msg" class="text-sm text-emerald-400 mt-2 hidden">Upgrading & refining your watchlist with curated suggestions...</p>
+            <p class="text-sm text-[#ebebf5]/60">Syncing library...</p>
+            <p id="seeding-msg" class="text-xs text-[#30d158] mt-2 hidden">Preparing your cloud watchlist...</p>
         </div>
 
         <!-- Dynamic Grid for Active Tab Genres -->
         <main id="genres-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 hidden">
-            <!-- Genres and items for the selected tab injected here -->
+            <!-- Genres and items injected here -->
         </main>
 
     </div>
 
-    <!-- Random Picker Modal Overlay -->
-    <div id="random-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 hidden">
-        <div class="bg-gray-800 border border-gray-700 rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all relative">
-            <!-- Close Icon -->
+    <!-- iOS-Style Tinted Sheet Modal for Random Pick -->
+    <div id="random-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 hidden">
+        <div class="ios-tinted-card max-w-md w-full p-6 relative">
             <button 
                 type="button" 
                 id="close-modal-btn" 
-                class="absolute top-4 right-4 text-gray-400 hover:text-white p-1.5 rounded-lg hover:bg-gray-700 transition-colors"
+                class="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-[#ebebf5]/70 hover:text-white flex items-center justify-center transition-colors"
                 aria-label="Close modal"
             >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                 </svg>
             </button>
 
             <div class="text-center pt-2">
-                <span id="random-badge" class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 mb-3">
+                <span id="random-badge" class="inline-block px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider bg-[#30d158]/15 text-[#30d158] border border-[#30d158]/25 mb-3">
                     🎬 Movie • Genre
                 </span>
-                <p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Tonight's Unwatched Pick</p>
-                <h3 id="random-title" class="text-2xl sm:text-3xl font-extrabold text-white my-4 min-h-[2.5rem] flex items-center justify-center leading-tight">
+                <p class="text-xs text-[#ebebf5]/50 uppercase tracking-widest mb-1">Up Next</p>
+                <h3 id="random-title" class="text-2xl sm:text-3xl font-bold tracking-tight text-white my-4 min-h-[2.5rem] flex items-center justify-center leading-snug">
                     Selecting...
                 </h3>
             </div>
 
-            <!-- Modal Action Buttons -->
-            <div id="random-actions" class="mt-6 flex flex-col gap-3">
-                <div class="grid grid-cols-2 gap-3">
+            <div id="random-actions" class="mt-6 flex flex-col gap-2.5">
+                <div class="grid grid-cols-2 gap-2.5">
                     <button 
                         type="button" 
                         id="spin-again-btn" 
-                        class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm"
+                        class="bg-white/[0.08] hover:bg-white/[0.14] active:scale-[0.98] text-white font-medium py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm"
                     >
                         <span>🎲 Spin Again</span>
                     </button>
                     <button 
                         type="button" 
                         id="locate-item-btn" 
-                        class="bg-gray-700 hover:bg-gray-600 text-gray-200 font-semibold py-2.5 px-4 rounded-xl transition-colors flex items-center justify-center gap-2 text-sm"
+                        class="bg-white/[0.08] hover:bg-white/[0.14] active:scale-[0.98] text-white font-medium py-2.5 px-4 rounded-xl transition-all flex items-center justify-center gap-2 text-xs sm:text-sm"
                     >
-                        <span>🎯 Locate in List</span>
+                        <span>🎯 Show in List</span>
                     </button>
                 </div>
                 <button 
                     type="button" 
                     id="mark-watched-modal-btn" 
-                    class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-4 rounded-xl transition-colors shadow-md flex items-center justify-center gap-2 text-sm"
+                    class="w-full bg-[#30d158] hover:bg-[#28c04d] active:scale-[0.99] text-black font-semibold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
                 >
-                    <span>✅ Mark as Watched</span>
+                    <span>Mark as Watched</span>
                 </button>
             </div>
         </div>
@@ -259,14 +360,18 @@
         const db = getFirestore(app);
 
         let moviesList = [];
-        let activeTab = 'movie'; // 'movie' or 'series' (only 1 visible at a time)
+        let activeTab = 'movie';
         let currentRandomPick = null;
         let isMigratingOrSeeding = false;
         let shuffleInterval = null;
+
+        // Tracks items recently checked/unchecked so they wait 2 seconds before moving to the bottom/top
+        const recentlyToggledSortState = new Map(); // docId -> { sortWatched: boolean, timerId: number }
+
         const moviesCollectionRef = collection(db, 'artifacts', APP_ID, 'public', 'data', 'movies');
 
         // ============================================================================
-        // 2. REFINED & EXPANDED MASTER SEED DATA (MOVIES + SERIES)
+        // 2. REFINED & EXPANDED MASTER SEED DATA
         // ============================================================================
         const refinedCatalog = [
             // --- MOVIES: ROMANCE ---
@@ -436,10 +541,7 @@
             { title: "The Martian", genre: "Sci-Fi", type: "movie" },
             { title: "The Prestige", genre: "Sci-Fi", type: "movie" },
 
-            // ========================================================================
-            // --- TV SERIES (Organized by Genre) ---
-            // ========================================================================
-            // Action & Thriller Series
+            // --- TV SERIES ---
             { title: "Alice in Borderland", genre: "Action & Thriller", type: "series" },
             { title: "Chernobyl", genre: "Action & Thriller", type: "series" },
             { title: "Mindhunter", genre: "Action & Thriller", type: "series" },
@@ -448,7 +550,6 @@
             { title: "Squid Game", genre: "Action & Thriller", type: "series" },
             { title: "The Day of the Jackal", genre: "Action & Thriller", type: "series" },
 
-            // Coming-of-Age Series
             { title: "Anne with an E", genre: "Coming-of-Age", type: "series" },
             { title: "Derry Girls", genre: "Coming-of-Age", type: "series" },
             { title: "Freaks and Geeks", genre: "Coming-of-Age", type: "series" },
@@ -456,7 +557,6 @@
             { title: "Sex Education", genre: "Coming-of-Age", type: "series" },
             { title: "The End of the F***ing World", genre: "Coming-of-Age", type: "series" },
 
-            // Sci-Fi Series
             { title: "3 Body Problem", genre: "Sci-Fi", type: "series" },
             { title: "Black Mirror", genre: "Sci-Fi", type: "series" },
             { title: "Cyberpunk: Edgerunners", genre: "Sci-Fi", type: "series" },
@@ -466,7 +566,6 @@
             { title: "Stranger Things", genre: "Sci-Fi", type: "series" },
             { title: "The 100", genre: "Sci-Fi", type: "series" },
 
-            // Drama Series
             { title: "Arcane", genre: "Drama", type: "series" },
             { title: "Better Call Saul", genre: "Drama", type: "series" },
             { title: "Breaking Bad", genre: "Drama", type: "series" },
@@ -475,7 +574,6 @@
             { title: "The Bear", genre: "Drama", type: "series" },
             { title: "True Detective", genre: "Drama", type: "series" },
 
-            // Comedy Series
             { title: "Brooklyn Nine-Nine", genre: "Comedy", type: "series" },
             { title: "Fleabag", genre: "Comedy", type: "series" },
             { title: "Only Murders in the Building", genre: "Comedy", type: "series" },
@@ -483,7 +581,6 @@
             { title: "Ted Lasso", genre: "Comedy", type: "series" },
             { title: "The Office", genre: "Comedy", type: "series" },
 
-            // Romance Series
             { title: "Bridgerton", genre: "Romance", type: "series" },
             { title: "Dash & Lily", genre: "Romance", type: "series" },
             { title: "Maxton Hall", genre: "Romance", type: "series" },
@@ -629,8 +726,16 @@
         }
 
         // ============================================================================
-        // 4. RENDERING & TAB SWITCHING LOGIC
+        // 4. RENDERING, 2-SECOND DELAYED SORT & TAB SWITCHING
         // ============================================================================
+        function getEffectiveSortWatched(item) {
+            // If the item was checked/unchecked within the last 2 seconds, keep its previous sort position
+            if (recentlyToggledSortState.has(item.id)) {
+                return recentlyToggledSortState.get(item.id).sortWatched;
+            }
+            return Boolean(item.watched);
+        }
+
         function setTab(tabName) {
             activeTab = tabName;
             
@@ -644,19 +749,19 @@
             const pickRandomLabel = document.getElementById('pick-random-label');
 
             if (tabName === 'movie') {
-                tabMovieBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 bg-emerald-600 text-white shadow-md';
-                badgeMovie.className = 'px-2 py-0.5 text-xs rounded-full bg-emerald-800 text-emerald-100';
+                tabMovieBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 bg-[#232b28] text-white shadow-sm border border-white/[0.08]';
+                badgeMovie.className = 'px-2 py-0.5 text-[11px] rounded-full bg-[#30d158]/20 text-[#30d158] tabular-nums';
                 
-                tabSeriesBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 text-gray-400 hover:text-white';
-                badgeSeries.className = 'px-2 py-0.5 text-xs rounded-full bg-gray-700 text-gray-300';
-                pickRandomLabel.innerText = 'Pick Random Movie';
+                tabSeriesBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 text-[#ebebf5]/60 hover:text-white border border-transparent';
+                badgeSeries.className = 'px-2 py-0.5 text-[11px] rounded-full bg-white/[0.06] text-[#ebebf5]/60 tabular-nums';
+                pickRandomLabel.innerText = 'Surprise Me (Movies)';
             } else {
-                tabSeriesBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 bg-emerald-600 text-white shadow-md';
-                badgeSeries.className = 'px-2 py-0.5 text-xs rounded-full bg-emerald-800 text-emerald-100';
+                tabSeriesBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 bg-[#232b28] text-white shadow-sm border border-white/[0.08]';
+                badgeSeries.className = 'px-2 py-0.5 text-[11px] rounded-full bg-[#30d158]/20 text-[#30d158] tabular-nums';
                 
-                tabMovieBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2.5 px-6 py-2.5 rounded-lg font-bold text-sm transition-all duration-200 text-gray-400 hover:text-white';
-                badgeMovie.className = 'px-2 py-0.5 text-xs rounded-full bg-gray-700 text-gray-300';
-                pickRandomLabel.innerText = 'Pick Random Series';
+                tabMovieBtn.className = 'flex-1 sm:flex-initial flex items-center justify-center gap-2 px-6 py-2 rounded-full font-semibold text-xs sm:text-sm transition-all duration-200 text-[#ebebf5]/60 hover:text-white border border-transparent';
+                badgeMovie.className = 'px-2 py-0.5 text-[11px] rounded-full bg-white/[0.06] text-[#ebebf5]/60 tabular-nums';
+                pickRandomLabel.innerText = 'Surprise Me (Series)';
             }
 
             renderUI();
@@ -699,40 +804,54 @@
 
             sortedGenres.forEach(genre => {
                 const itemsInGenre = groupedItems[genre];
-                itemsInGenre.sort((a, b) => a.title.localeCompare(b.title));
+
+                // Sort: Unwatched at top (alphabetical), Watched at bottom (alphabetical)
+                // Respects the 2-second delayed sort lock for recently clicked items
+                itemsInGenre.sort((a, b) => {
+                    const aWatchedSort = getEffectiveSortWatched(a);
+                    const bWatchedSort = getEffectiveSortWatched(b);
+                    if (aWatchedSort !== bWatchedSort) {
+                        return aWatchedSort ? 1 : -1;
+                    }
+                    return a.title.localeCompare(b.title);
+                });
 
                 const genreCard = document.createElement('div');
-                genreCard.className = 'bg-gray-800 rounded-2xl shadow-lg border border-gray-700 p-5 flex flex-col h-full max-h-[450px] transition-transform duration-300 hover:shadow-xl';
+                genreCard.className = 'ios-tinted-card p-5 flex flex-col h-full max-h-[460px] transition-all duration-300';
                 
                 const completedInGenre = itemsInGenre.filter(m => m.watched).length;
                 const genreTitle = document.createElement('h3');
-                genreTitle.className = 'text-lg font-bold text-emerald-400 mb-4 border-b border-gray-700 pb-2 flex justify-between items-end';
-                genreTitle.innerHTML = `${genre} <span class="text-sm font-normal text-gray-500">${completedInGenre}/${itemsInGenre.length}</span>`;
+                genreTitle.className = 'text-base font-semibold tracking-tight text-white mb-3.5 border-b border-white/[0.07] pb-3 flex justify-between items-center';
+                genreTitle.innerHTML = `
+                    <span>${genre}</span>
+                    <span class="text-xs font-medium px-2.5 py-0.5 rounded-full bg-white/[0.06] text-[#ebebf5]/60 tabular-nums">${completedInGenre} / ${itemsInGenre.length}</span>
+                `;
                 genreCard.appendChild(genreTitle);
 
                 const list = document.createElement('ul');
-                list.className = 'space-y-3 overflow-y-auto flex-grow pr-3 card-scroll';
+                list.className = 'space-y-1.5 overflow-y-auto flex-grow pr-2 card-scroll';
                 list.setAttribute('data-genre-name', genre);
 
                 itemsInGenre.forEach(item => {
                     totalInTab++;
                     if (item.watched) watchedInTab++;
 
+                    const isPendingMove = recentlyToggledSortState.has(item.id);
                     const listItem = document.createElement('li');
                     listItem.id = `item-row-${item.id}`;
-                    listItem.className = 'flex items-start justify-between gap-3 group px-1.5 py-0.5 transition-colors';
+                    listItem.className = `flex items-center justify-between gap-3 group px-2 py-1.5 rounded-xl hover:bg-white/[0.03] transition-all ${isPendingMove ? 'pending-move' : ''}`;
 
                     const isChecked = item.watched ? 'checked' : '';
                     const labelClass = item.watched 
-                        ? 'movie-label watched-text flex-1 select-none pt-0.5 leading-snug cursor-pointer' 
-                        : 'movie-label text-gray-200 flex-1 select-none pt-0.5 leading-snug group-hover:text-white transition-colors cursor-pointer';
+                        ? 'movie-label watched-text text-sm flex-1 select-none leading-snug cursor-pointer' 
+                        : 'movie-label text-[#ffffff]/90 text-sm flex-1 select-none leading-snug group-hover:text-white transition-colors cursor-pointer';
 
                     listItem.innerHTML = `
-                        <div class="flex items-start gap-3 flex-1 min-w-0">
+                        <div class="flex items-center gap-3 flex-1 min-w-0">
                             <input 
                                 type="checkbox" 
                                 id="chk-${item.id}" 
-                                class="checkbox-custom mt-1 shrink-0 bg-gray-900 border-gray-600 rounded focus:ring-emerald-500 transition duration-150 ease-in-out"
+                                class="checkbox-custom shrink-0"
                                 ${isChecked}
                                 data-id="${item.id}"
                                 data-watched="${item.watched}"
@@ -743,12 +862,12 @@
                         </div>
                         <button 
                             type="button"
-                            class="delete-btn text-gray-500 hover:text-red-400 opacity-60 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-150 p-1 rounded hover:bg-gray-700/50 shrink-0"
+                            class="delete-btn text-[#ebebf5]/30 hover:text-red-400 opacity-60 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all duration-150 p-1 rounded-lg hover:bg-white/[0.06] shrink-0"
                             data-id="${item.id}"
                             title="Remove from watchlist"
                             aria-label="Remove ${item.title}"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                         </button>
@@ -760,7 +879,7 @@
                 container.appendChild(genreCard);
             });
 
-            document.getElementById('progress-label').innerText = activeTab === 'movie' ? 'Movies Completion' : 'TV Series Completion';
+            document.getElementById('progress-label').innerText = activeTab === 'movie' ? 'Movies' : 'Series';
             document.getElementById('progress-text').innerText = `${watchedInTab} / ${totalInTab}`;
             const percentage = totalInTab === 0 ? 0 : Math.round((watchedInTab / totalInTab) * 100);
             document.getElementById('progress-bar').style.width = `${percentage}%`;
@@ -794,15 +913,14 @@
 
             if (unwatchedPool.length === 0) {
                 currentRandomPick = null;
-                badgeEl.innerText = `${typeLabel} • All Caught Up!`;
-                titleEl.innerText = `You've watched every ${activeTab === 'movie' ? 'movie' : 'series'} in this tab! 🎉`;
+                badgeEl.innerText = `${typeLabel} • Complete`;
+                titleEl.innerText = `All ${activeTab === 'movie' ? 'movies' : 'series'} watched! 🎉`;
                 actionsEl.classList.add('hidden');
                 return;
             }
 
             actionsEl.classList.remove('hidden');
 
-            // Avoid picking the exact same item twice in a row if more than 1 unwatched item exists
             let candidates = unwatchedPool;
             if (unwatchedPool.length > 1 && currentRandomPick) {
                 candidates = unwatchedPool.filter(i => i.id !== currentRandomPick.id);
@@ -811,11 +929,10 @@
             const winner = candidates[Math.floor(Math.random() * candidates.length)];
             currentRandomPick = winner;
 
-            // Brief slot-machine shuffle effect before revealing the winner
             if (shuffleInterval) clearInterval(shuffleInterval);
             let ticks = 0;
             const maxTicks = 8;
-            badgeEl.innerText = `${typeLabel} • Shuffling...`;
+            badgeEl.innerText = `${typeLabel} • Selecting...`;
 
             shuffleInterval = setInterval(() => {
                 const tempItem = unwatchedPool[Math.floor(Math.random() * unwatchedPool.length)];
@@ -835,17 +952,15 @@
         }
 
         // ============================================================================
-        // 6. EVENT LISTENERS
+        // 6. EVENT LISTENERS (INCLUDING 2-SEC DELAYED MOVE TO BOTTOM)
         // ============================================================================
         document.getElementById('tab-movie').addEventListener('click', () => setTab('movie'));
         document.getElementById('tab-series').addEventListener('click', () => setTab('series'));
 
-        // Random Picker Listeners
         document.getElementById('pick-random-btn').addEventListener('click', pickRandomUnwatched);
         document.getElementById('spin-again-btn').addEventListener('click', pickRandomUnwatched);
         document.getElementById('close-modal-btn').addEventListener('click', closeRandomModal);
 
-        // Close modal when clicking backdrop or pressing Escape
         document.getElementById('random-modal').addEventListener('click', (e) => {
             if (e.target.id === 'random-modal') closeRandomModal();
         });
@@ -853,7 +968,6 @@
             if (e.key === 'Escape') closeRandomModal();
         });
 
-        // Locate Picked Item in List
         document.getElementById('locate-item-btn').addEventListener('click', () => {
             if (!currentRandomPick) return;
             const targetRow = document.getElementById(`item-row-${currentRandomPick.id}`);
@@ -861,12 +975,11 @@
             if (targetRow) {
                 targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 targetRow.classList.remove('locate-highlight');
-                void targetRow.offsetWidth; // trigger reflow to restart animation
+                void targetRow.offsetWidth;
                 targetRow.classList.add('locate-highlight');
             }
         });
 
-        // Mark Picked Item as Watched directly from Modal
         document.getElementById('mark-watched-modal-btn').addEventListener('click', async () => {
             if (!currentRandomPick || !auth.currentUser) return;
             const btn = document.getElementById('mark-watched-modal-btn');
@@ -881,7 +994,6 @@
             btn.disabled = false;
         });
 
-        // Add New Movie or Series
         document.getElementById('add-movie-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!auth.currentUser) return;
@@ -897,7 +1009,7 @@
             
             if (title && genre && type) {
                 if (moviesList.some(m => m.title.toLowerCase() === title.toLowerCase() && (m.type || 'movie') === type)) {
-                    showInputFeedback(titleInput, "Already in watchlist!", true);
+                    showInputFeedback(titleInput, "Already in library", true);
                     return;
                 }
 
@@ -915,16 +1027,16 @@
                     if (activeTab !== type) {
                         setTab(type);
                     }
-                    showInputFeedback(titleInput, "Added to cloud!", false);
+                    showInputFeedback(titleInput, "Added to library", false);
                 } catch (error) {
                     console.error("Error adding document: ", error);
-                    showInputFeedback(titleInput, "Error saving.", true);
+                    showInputFeedback(titleInput, "Error saving", true);
                 }
                 addBtn.disabled = false;
             }
         });
 
-        // Toggle checkbox
+        // Toggle checkbox with 2-second delay before moving item to bottom/top
         document.getElementById('genres-container').addEventListener('change', async (e) => {
             if (e.target && e.target.classList.contains('checkbox-custom')) {
                 const docId = e.target.getAttribute('data-id');
@@ -933,6 +1045,23 @@
 
                 if (!auth.currentUser || !docId) return;
 
+                // Lock the item's current sort position for 2 seconds so it doesn't jump immediately
+                if (recentlyToggledSortState.has(docId)) {
+                    clearTimeout(recentlyToggledSortState.get(docId).timerId);
+                } else {
+                    recentlyToggledSortState.set(docId, {
+                        sortWatched: currentlyWatched,
+                        timerId: null
+                    });
+                }
+
+                const timerId = setTimeout(() => {
+                    recentlyToggledSortState.delete(docId);
+                    renderUI(); // Re-render after 2 seconds to move item to the bottom/top
+                }, 2000);
+
+                recentlyToggledSortState.get(docId).timerId = timerId;
+
                 const movieRef = doc(db, 'artifacts', APP_ID, 'public', 'data', 'movies', docId);
                 try {
                     await updateDoc(movieRef, {
@@ -940,7 +1069,10 @@
                     });
                 } catch (error) {
                     console.error("Error updating document:", error);
+                    clearTimeout(timerId);
+                    recentlyToggledSortState.delete(docId);
                     e.target.checked = currentlyWatched;
+                    renderUI();
                 }
             }
         });
@@ -967,11 +1099,11 @@
             const originalPlaceholder = element.placeholder;
             element.value = '';
             element.placeholder = message;
-            if (isError) element.classList.add('border-red-500', 'placeholder-red-400');
-            else element.classList.add('border-emerald-500', 'placeholder-emerald-400');
+            if (isError) element.classList.add('border-red-500');
+            else element.classList.add('border-[#30d158]');
             setTimeout(() => {
                 element.placeholder = originalPlaceholder;
-                element.classList.remove('border-red-500', 'placeholder-red-400', 'border-emerald-500', 'placeholder-emerald-400');
+                element.classList.remove('border-red-500', 'border-[#30d158]');
             }, 2500);
         }
 
