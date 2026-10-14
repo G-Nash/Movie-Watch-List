@@ -623,7 +623,7 @@
         
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultFirebaseConfig;
         const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'my-github-watchlist';
-        const CATALOG_VERSION = 3; // Bumped to sync English-only Gen Z additions automatically
+        const CATALOG_VERSION = 3;
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -728,15 +728,14 @@
             ...["After Yang", "Alien: Romulus", "Annihilation", "Arrival", "Blade Runner 2049", "Chronicle", "Coherence", "Devs", "Donnie Darko", "Dune: Part One", "Dune: Part Two", "Dune: Part Three", "Everything Everywhere All at Once", "Ex Machina", "Her", "Inception", "Interstellar", "Looper", "Mickey 17", "Moon", "Possessor", "Predestination", "Project Hail Mary", "Source Code", "Sunshine", "Tenet", "The Creator", "The Lobster", "The Martian", "The Prestige", "The Substance", "Upgrade", "Vast of Night"].map(title => ({ title, genre: "Sci-Fi", type: "movie" })),
 
             // --- TV SERIES (ENGLISH) ---
-            ...["Chernobyl", "Cross", "Dept. Q", "Fargo", "Hijack", "Mindhunter", "Mr. & Mrs. Smith", "Mr. Robot", "Presumed Innocent", "Reacher", "Slow Horses", "The Boys", "The Day of the Jackal", "The Gentlemen", "The Night Agent", "The Penguin", "watchmen", "Yellowjackets"].map(title => ({ title: title === "watchmen" ? "Watchmen" : title, genre: "Action & Thriller", type: "series" })),
+            ...["Chernobyl", "Cross", "Dept. Q", "Fargo", "Hijack", "Mindhunter", "Mr. & Mrs. Smith", "Mr. Robot", "Presumed Innocent", "Reacher", "Slow Horses", "The Boys", "The Day of the Jackal", "The Gentlemen", "The Night Agent", "The Penguin", "Watchmen", "Yellowjackets"].map(title => ({ title, genre: "Action & Thriller", type: "series" })),
             ...["A Good Girl's Guide to Murder", "Anne with an E", "Derry Girls", "Everything Now", "Freaks and Geeks", "Genera+ion", "Grand Army", "Heartbreak High", "Heartstopper", "I Am Not Okay with This", "Never Have I Ever", "Overcompensating", "Reservation Dogs", "Sex Education", "Skins", "The End of the F***ing World", "The Sex Lives of College Girls", "The Summer I Turned Pretty", "We Are Who We Are"].map(title => ({ title, genre: "Coming-of-Age", type: "series" })),
             ...["3 Body Problem", "Andor", "Black Mirror", "Cyberpunk: Edgerunners", "Fallout", "Foundation", "Gen V", "Invincible", "Loki", "Murderbot", "Pantheon", "Scavengers Reign", "Severance", "Silo", "Station Eleven", "Stranger Things", "Sweetpea", "The 100", "The Last of Us", "The Peripheral", "Westworld"].map(title => ({ title, genre: "Sci-Fi", type: "series" })),
-            ...["Adolescence", "Arcane", "Baby Reindeer", "Beef", "Better Call Saul", "Big Little Lies", "Breaking Bad", "Daisy Jones & The Six", "Disclaimer", "Dopesick", "Euphoria", "Fellow Travelers", "House of the Dragon", "Industry", "Interview with the Vampire", "Maid", "Mare of Easttown", "Monster", "Normal People", "Ozark", "Peaky Blinders", "ipley", "Ripley", "Say Nothing", "Succession", "The Bear", "The Crown", "The Morning Show", "The Pitt", "The Queen's Gambit", "The White Lotus", "True Detective", "Unbelievable", "Winning Time"].filter(t => t !== "ipley").map(title => ({ title, genre: "Drama", type: "series" })),
-            ...["Abbott Elementary", "adults", "Adults", "Atlanta", "Barry", "Broad City", "Brooklyn Nine-Nine", "Dave", "English Teacher", "Fleabag", "Hacks", "How I Met Your Mother", "Insecure", "Jury Duty", "Mythic Quest", "New Girl", "Nobody Wants This", "Only Murders in the Building", "Parks and Recreation", "Platonic", "Poker Face", "RamY", "Ramy", "Righteous Gemstones", "Schitt's Creek", "Shrinking", "Silicon Valley", "Search Party", "Ted Lasso", "The Good Place", "The Office", "The Rehearsal", "The Studio", "Tires", "What We Do in the Shadows"].filter(t => t !== "adults" && t !== "RamY").map(title => ({ title, genre: "Comedy", type: "series" })),
+            ...["Adolescence", "Arcane", "Baby Reindeer", "Beef", "Better Call Saul", "Big Little Lies", "Breaking Bad", "Daisy Jones & The Six", "Disclaimer", "Dopesick", "Euphoria", "Fellow Travelers", "House of the Dragon", "Industry", "Interview with the Vampire", "Maid", "Mare of Easttown", "Monster", "Normal People", "Ozark", "Peaky Blinders", "Ripley", "Say Nothing", "Succession", "The Bear", "The Crown", "The Morning Show", "The Pitt", "The Queen's Gambit", "The White Lotus", "True Detective", "Unbelievable", "Winning Time"].map(title => ({ title, genre: "Drama", type: "series" })),
+            ...["Abbott Elementary", "Adults", "Atlanta", "Barry", "Broad City", "Brooklyn Nine-Nine", "Dave", "English Teacher", "Fleabag", "Hacks", "How I Met Your Mother", "Insecure", "Jury Duty", "Mythic Quest", "New Girl", "Nobody Wants This", "Only Murders in the Building", "Parks and Recreation", "Platonic", "Poker Face", "Ramy", "Righteous Gemstones", "Schitt's Creek", "Shrinking", "Silicon Valley", "Search Party", "Ted Lasso", "The Good Place", "The Office", "The Rehearsal", "The Studio", "Tires", "What We Do in the Shadows"].map(title => ({ title, genre: "Comedy", type: "series" })),
             ...["Bridgerton", "Conversations with Friends", "Dash & Lily", "Emilia", "Fleishman Is in Trouble", "Forever", "High Fidelity", "Love Life", "Modern Love", "My Lady Jane", "One Day (Series)", "Outlander", "Queen Charlotte", "Starstruck", "The Buccaneers", "The Flatshare", "The Vampire Diaries", "Too Much", "XO, Kitty"].map(title => ({ title, genre: "Romance", type: "series" }))
         ];
 
-        // Non-English titles from previous versions to remove automatically
         const NON_ENGLISH_TITLES = new Set([
             "parasite",
             "anatomy of a fall",
@@ -842,7 +841,6 @@
 
         async function runSmartMigration(existingDocs) {
             const ops = [];
-            const catalogMap = new Map(SEED_CATALOG.map(item => [`${item.type}:${item.title.toLowerCase()}`, item]));
             const catalogByTitleOnly = new Map(SEED_CATALOG.map(item => [item.title.toLowerCase(), item]));
             const seenKeys = new Set();
 
@@ -904,7 +902,6 @@
                 }
             }
 
-            // Execute in safe Firestore batch chunks (max 500 ops per batch)
             const CHUNK_SIZE = 400;
             for (let i = 0; i < ops.length; i += CHUNK_SIZE) {
                 const batch = writeBatch(db);
@@ -977,7 +974,7 @@
         }
 
         // ============================================================================
-        // 5. RENDERING ENGINE
+        // 5. RENDERING ENGINE (WITH ENLARGED 5-STAR RATINGS)
         // ============================================================================
         function renderGenrePills(tabItems) {
             const countsByGenre = {};
@@ -1021,14 +1018,14 @@
             for (let s = 1; s <= 5; s++) {
                 const filled = s <= currentRating;
                 stars += `
-                    <button type="button" class="rate-star-btn p-0.5 transition-transform hover:scale-125 focus:outline-none" data-id="${item.id}" data-star="${s}" title="Rate ${s} star${s > 1 ? 's' : ''}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 ${filled ? 'text-[#64d2ff]' : 'text-white/15 hover:text-white/40'}" viewBox="0 0 20 20" fill="currentColor">
+                    <button type="button" class="rate-star-btn p-1 transition-transform hover:scale-125 active:scale-95 focus:outline-none" data-id="${item.id}" data-star="${s}" title="Rate ${s} star${s > 1 ? 's' : ''}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 sm:h-[17px] sm:w-[17px] ${filled ? 'text-[#64d2ff] drop-shadow-[0_0_6px_rgba(100,210,255,0.4)]' : 'text-white/20 hover:text-white/50'}" viewBox="0 0 20 20" fill="currentColor">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                         </svg>
                     </button>
                 `;
             }
-            return `<div class="flex items-center gap-0.5 shrink-0" aria-label="Rating">${stars}</div>`;
+            return `<div class="flex items-center bg-[#12141c]/90 px-1.5 py-0.5 rounded-full border border-white/[0.06] shrink-0" aria-label="Rating">${stars}</div>`;
         }
 
         function renderUI() {
@@ -1127,7 +1124,7 @@
                                     ${highlightMatch(item.title, query)}
                                 </label>
                             </div>
-                            <div class="flex items-center gap-1 shrink-0">
+                            <div class="flex items-center gap-1.5 shrink-0">
                                 ${buildStarRatingHtml(item)}
                                 <button 
                                     type="button"
