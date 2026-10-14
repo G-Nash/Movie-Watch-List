@@ -90,10 +90,10 @@
             appearance: none;
             -webkit-appearance: none;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='rgba(235,235,245,0.45)' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75' d='M6 8l4 4 4-4'/%3E%3C/svg%3E");
-            background-position: right 0.85rem center;
+            background-position: right 0.75rem center;
             background-repeat: no-repeat;
-            background-size: 1.15rem;
-            padding-right: 2.5rem;
+            background-size: 1.1rem;
+            padding-right: 2.3rem;
         }
 
         /* iOS Segmented Controls */
@@ -445,16 +445,27 @@
             </div>
         </div>
 
-        <!-- Secondary Genre Pill Filter Bar (Filter by Just Genre) -->
-        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 mb-6" id="genre-pills-bar" aria-label="Filter by genre">
-            <!-- Dynamically populated genre chips -->
+        <!-- Secondary Bar: Genre Pill Filter + Compact Sort Selector -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1" id="genre-pills-bar" aria-label="Filter by genre">
+                <!-- Dynamically populated genre chips -->
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <label for="sort-select" class="text-[11px] font-medium text-[#ebebf5]/45 uppercase tracking-wider">Sort</label>
+                <select id="sort-select" class="ios-input ios-select px-3 py-1.5 text-xs font-medium rounded-full cursor-pointer bg-[#131620]">
+                    <option value="alpha">A–Z</option>
+                    <option value="rating">Highest Rated</option>
+                    <option value="recent">Recently Added</option>
+                </select>
+            </div>
         </div>
 
         <!-- Loading State -->
         <div id="loading-container" class="flex flex-col items-center justify-center py-20">
             <div class="loader mb-4"></div>
             <p class="text-sm text-[#ebebf5]/60">Syncing library...</p>
-            <p id="seeding-msg" class="text-xs text-[#64d2ff] mt-2 hidden">Preparing your cloud watchlist...</p>
+            <p id="seeding-msg" class="text-xs text-[#64d2ff] mt-2 hidden">Updating your cloud watchlist with latest titles...</p>
         </div>
 
         <!-- Dynamic Grid for Active Tab Genres -->
@@ -612,6 +623,7 @@
         
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultFirebaseConfig;
         const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'my-github-watchlist';
+        const CATALOG_VERSION = 3; // Bumped to sync English-only Gen Z additions automatically
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -630,10 +642,12 @@
 
         const state = {
             items: [],
+            itemMap: new Map(),        // id -> item for O(1) lookups
             activeTab: 'movie',        // 'movie' | 'series'
             statusFilter: 'all',       // 'all' | 'unwatched' | 'watched'
-            genreFilter: 'all',        // 'all' | specific genre name
-            modalMoodGenre: 'all',     // 'all' | specific genre name inside Surprise Me modal
+            genreFilter: 'all',        // 'all' | specific genre
+            sortBy: 'alpha',           // 'alpha' | 'rating' | 'recent'
+            modalMoodGenre: 'all',     // 'all' | specific genre in modal
             searchQuery: '',
             randomPick: null,
             editingItemId: null,
@@ -641,6 +655,7 @@
             undoTimer: null,
             isMigrating: false,
             shuffleTimer: null,
+            searchRaf: null,
             pendingSortMap: new Map()  // docId -> { sortWatched: boolean, timerId: number }
         };
 
@@ -649,6 +664,7 @@
             seedingMsg: document.getElementById('seeding-msg'),
             genresContainer: document.getElementById('genres-container'),
             genrePillsBar: document.getElementById('genre-pills-bar'),
+            sortSelect: document.getElementById('sort-select'),
             progressLabel: document.getElementById('progress-label'),
             progressBar: document.getElementById('progress-bar'),
             progressText: document.getElementById('progress-text'),
@@ -687,23 +703,54 @@
         };
 
         // ============================================================================
-        // 2. MASTER SEED CATALOG
+        // 2. ENGLISH-ONLY GEN Z & LETTERBOXD MASTER SEED CATALOG
         // ============================================================================
         const SEED_CATALOG = [
-            ...["10 Things I Hate About You", "2 Hearts", "500 Days of Summer", "About Time", "Along Came Polly", "Before Sunrise", "Before Sunset", "Blue Valentine", "Call Me by Your Name", "Crazy, Stupid, Love.", "Eternal Sunshine of the Spotless Mind", "Five Feet Apart", "How to Lose a Guy in 10 Days", "In Your Eyes", "Isn't It Romantic", "La La Land", "Love, Rosie", "Love, Simon", "Materialists", "Me Before You", "Monte Carlo", "My Oxford Year", "Notting Hill", "One Day", "Past Lives", "Portrait of a Lady on Fire", "Pride & Prejudice", "Regretting You", "Silver Linings Playbook", "The Invite", "The Love Hypothesis", "The Notebook", "The Time Traveler's Wife", "Then Came You", "To All the Boys I've Loved Before", "Twilight", "We Live in Time"].map(title => ({ title, genre: "Romance", type: "movie" })),
-            ...["Aftersun", "Almost Famous", "Booksmart", "Boyhood", "Bridge to Terabithia", "Close", "CODA", "Eighth Grade", "Flipped", "Lady Bird", "Me and Earl and the Dying Girl", "Mid90s", "Short Term 12", "Sing Street", "Stand by Me", "Submarine", "The Edge of Seventeen", "The Florida Project", "The Holdovers", "The Kings of Summer", "The Perks of Being a Wallflower", "The Spectacular Now", "The Way Way Back", "The Worst Person in the World"].map(title => ({ title, genre: "Coming-of-Age", type: "movie" })),
-            ...["A Bronx Tale", "Anatomy of a Fall", "Another Round", "Atonement", "Beautiful Boy", "Dead Poets Society", "Forrest Gump", "Good Will Hunting", "Kill Your Darlings", "Little Women", "Lost in Translation", "Manchester by the Sea", "Meet Joe Black", "Oppenheimer", "Parasite", "Priscilla", "Requiem for a Dream", "Shakespeare in Love", "Small Things Like These", "The Art of Racing in the Rain", "The Curious Case of Benjamin Button", "The Hours", "The Shawshank Redemption", "The Social Network", "West Side Story", "Whiplash"].map(title => ({ title, genre: "Drama", type: "movie" })),
-            ...["American Psycho", "Black Swan", "Companion", "Drive", "Gone Girl", "Heart of the Beast", "How to Make a Killing", "In Time", "Léon: The Professional", "Nightcrawler", "Nocturnal Animals", "Pearl", "Primetime", "Prisoners", "Ready or Not 2", "Resident Evil", "Se7en", "Shutter Island", "Taken", "The Autopsy of Jane Doe", "The Hunger Games", "The Inheritance", "The Matrix", "Verity"].map(title => ({ title, genre: "Action & Thriller", type: "movie" })),
-            ...["1917", "All Quiet on the Western Front", "Coraline", "Flow", "Into the Wild", "Mad Max: Fury Road", "Miss Peregrine's Home for Peculiar Children", "The Revenant", "The Secret Life of Walter Mitty"].map(title => ({ title, genre: "Adventure", type: "movie" })),
-            ...["21 Jump Street", "Game Night", "Home Alone", "Knives Out", "Long Shot", "Mamma Mia! Here We Go Again", "Neighbors", "Palm Springs", "Project X", "Red One", "Sing", "Superbad", "The Big Sick", "The Drama", "The Grand Budapest Hotel", "The Hangover", "The Intern", "The Nice Guys", "The World's End", "Yesterday"].map(title => ({ title, genre: "Comedy", type: "movie" })),
-            ...["Arrival", "Blade Runner 2049", "Dune: Part One", "Dune: Part Two", "Everything Everywhere All at Once", "Ex Machina", "Inception", "Interstellar", "Mickey 17", "Project Hail Mary", "Tenet", "The Martian", "The Prestige"].map(title => ({ title, genre: "Sci-Fi", type: "movie" })),
-            ...["Alice in Borderland", "Chernobyl", "Mindhunter", "Mr. Robot", "Shōgun", "Squid Game", "The Day of the Jackal"].map(title => ({ title, genre: "Action & Thriller", type: "series" })),
-            ...["Anne with an E", "Derry Girls", "Freaks and Geeks", "Heartstopper", "Sex Education", "The End of the F***ing World"].map(title => ({ title, genre: "Coming-of-Age", type: "series" })),
-            ...["3 Body Problem", "Black Mirror", "Cyberpunk: Edgerunners", "Dark", "Severance", "Silo", "Stranger Things", "The 100"].map(title => ({ title, genre: "Sci-Fi", type: "series" })),
-            ...["Arcane", "Better Call Saul", "Breaking Bad", "Peaky Blinders", "Succession", "The Bear", "True Detective"].map(title => ({ title, genre: "Drama", type: "series" })),
-            ...["Brooklyn Nine-Nine", "Fleabag", "Only Murders in the Building", "Schitt's Creek", "Ted Lasso", "The Office"].map(title => ({ title, genre: "Comedy", type: "series" })),
-            ...["Bridgerton", "Dash & Lily", "Maxton Hall", "Normal People", "The Vampire Diaries"].map(title => ({ title, genre: "Romance", type: "series" }))
+            // --- MOVIES: ROMANCE ---
+            ...["10 Things I Hate About You", "2 Hearts", "500 Days of Summer", "About Time", "All of Us Strangers", "Along Came Polly", "Anyone But You", "Before Sunrise", "Before Sunset", "Blue Valentine", "Bones and All", "Call Me by Your Name", "Challengers", "Crazy, Stupid, Love.", "Eternal Sunshine of the Spotless Mind", "Five Feet Apart", "How to Lose a Guy in 10 Days", "In Your Eyes", "Isn't It Romantic", "La La Land", "Love, Rosie", "Love, Simon", "Materialists", "Me Before You", "Monte Carlo", "My Oxford Year", "Notting Hill", "One Day", "Palm Trees and Power Lines", "Past Lives", "Pride & Prejudice", "Regretting You", "Rye Lane", "Silver Linings Playbook", "The Idea of You", "The Invite", "The Love Hypothesis", "The Notebook", "The Time Traveler's Wife", "Then Came You", "To All the Boys I've Loved Before", "Twilight", "We Live in Time"].map(title => ({ title, genre: "Romance", type: "movie" })),
+
+            // --- MOVIES: COMING-OF-AGE ---
+            ...["20th Century Women", "Aftersun", "Almost Famous", "Are You There God? It's Me, Margaret.", "Booksmart", "Bottoms", "Boyhood", "Bridge to Terabithia", "Cha Cha Real Smooth", "CODA", "Didi", "Eighth Grade", "Empire Records", "Flipped", "Frances Ha", "Lady Bird", "Me and Earl and the Dying Girl", "Mid90s", "My Old Ass", "Palo Alto", "Shiva Baby", "Short Term 12", "Sing Street", "Snack Shack", "Stand by Me", "Submarine", "Super Dark Times", "The Edge of Seventeen", "The Fallout", "The Florida Project", "The Holdovers", "The Kings of Summer", "The Perks of Being a Wallflower", "The Spectacular Now", "The Way Way Back", "Waves"].map(title => ({ title, genre: "Coming-of-Age", type: "movie" })),
+
+            // --- MOVIES: DRAMA ---
+            ...["A Bronx Tale", "A Real Pain", "Aftershock", "American Fiction", "Anora", "Atonement", "Beautiful Boy", "Birdman", "C'mon C'mon", "Dead Poets Society", "Forrest Gump", "Good Will Hunting", "Kill Your Darlings", "Little Women", "Lost in Translation", "Manchester by the Sea", "Marriage Story", "May December", "Meet Joe Black", "Moonlight", "Oppenheimer", "Past Midnight", "Priscilla", "Requiem for a Dream", "Saltburn", "Shakespeare in Love", "Sing Sing", "Small Things Like These", "Sound of Metal", "Spencer", "Tár", "The Art of Racing in the Rain", "The Banshees of Inisherin", "The Brutalist", "The Curious Case of Benjamin Button", "The Fabelmans", "The Hours", "The Iron Claw", "The Lighthouse", "The Master", "The Shawshank Redemption", "The Social Network", "The Whale", "Uncut Gems", "West Side Story", "Whiplash"].map(title => ({ title, genre: "Drama", type: "movie" })),
+
+            // --- MOVIES: ACTION & THRILLER ---
+            ...["28 Years Later: The Bone Temple", "American Psycho", "Baby Driver", "Barbarian", "Black Swan", "Blink Twice", "Bodies Bodies Bodies", "Bullet Train", "Civil War", "Companion", "Don't Worry Darling", "Drive", "Fresh", "Get Out", "Glass Onion", "Gone Girl", "Good Time", "Green Room", "Heart of the Beast", "Hereditary", "Heretic", "How to Make a Killing", "In Time", "Last Night in Soho", "Léon: The Professional", "Longlegs", "Love Lies Bleeding", "Midsommar", "Monkey Man", "Nightcrawler", "Nocturnal Animals", "Nope", "Obsession", "Pearl", "Primetime", "Prisoners", "Promising Young Woman", "Ready or Not", "Ready or Not 2", "Rebel Ridge", "Resident Evil", "Se7en", "Shutter Island", "Sinners", "Smile 2", "Strange Darling", "Taken", "Talk to Me", "The Autopsy of Jane Doe", "The Batman", "The Hunger Games", "The Inheritance", "The Invisible Man", "The Killer", "The Matrix", "The Menu", "The Witch", "Trap", "Us", "Verity", "Weapons", "X"].map(title => ({ title, genre: "Action & Thriller", type: "movie" })),
+
+            // --- MOVIES: ADVENTURE ---
+            ...["1917", "Coraline", "Dungeons & Dragons: Honor Among Thieves", "Flow", "Furiosa: A Mad Max Saga", "Into the Wild", "Kingdom of the Planet of the Apes", "Mad Max: Fury Road", "Miss Peregrine's Home for Peculiar Children", "Spider-Man: Across the Spider-Verse", "Spider-Man: Into the Spider-Verse", "The Green Knight", "The Grand Tour", "The Northman", "The Odyssey", "The Revenant", "The Secret Life of Walter Mitty", "Twisters"].map(title => ({ title, genre: "Adventure", type: "movie" })),
+
+            // --- MOVIES: COMEDY ---
+            ...["21 Jump Street", "22 Jump Street", "Bodies", "Brigsby Bear", "Bros", "Burn After Reading", "Cruella", "Deadpool & Wolverine", "Do Revenge", "Dream Scenario", "Easy A", "Everybody Wants Some!!", "Fire Island", "Friendship", "Game Night", "Hit Man", "Home Alone", "Ingrid Goes West", "Jojo Rabbit", "Knives Out", "Long Shot", "Mamma Mia! Here We Go Again", "Mean Girls", "Neighbors", "No Hard Feelings", "Once Upon a Time in Hollywood", "Palm Springs", "Poor Things", "Project X", "Red One", "Ricky Stanicky", "Saturday Night", "Scott Pilgrim vs. the World", "Sing", "Sorry to Bother You", "Superbad", "The Big Sick", "The Drama", "The Fall Guy", "The Grand Budapest Hotel", "The Hangover", "The Intern", "The Nice Guys", "The Phoenician Scheme", "The World's End", "Theater Camp", "Triangle of Sadness", "Yesterday", "Zombieland"].map(title => ({ title, genre: "Comedy", type: "movie" })),
+
+            // --- MOVIES: SCI-FI ---
+            ...["After Yang", "Alien: Romulus", "Annihilation", "Arrival", "Blade Runner 2049", "Chronicle", "Coherence", "Devs", "Donnie Darko", "Dune: Part One", "Dune: Part Two", "Dune: Part Three", "Everything Everywhere All at Once", "Ex Machina", "Her", "Inception", "Interstellar", "Looper", "Mickey 17", "Moon", "Possessor", "Predestination", "Project Hail Mary", "Source Code", "Sunshine", "Tenet", "The Creator", "The Lobster", "The Martian", "The Prestige", "The Substance", "Upgrade", "Vast of Night"].map(title => ({ title, genre: "Sci-Fi", type: "movie" })),
+
+            // --- TV SERIES (ENGLISH) ---
+            ...["Chernobyl", "Cross", "Dept. Q", "Fargo", "Hijack", "Mindhunter", "Mr. & Mrs. Smith", "Mr. Robot", "Presumed Innocent", "Reacher", "Slow Horses", "The Boys", "The Day of the Jackal", "The Gentlemen", "The Night Agent", "The Penguin", "watchmen", "Yellowjackets"].map(title => ({ title: title === "watchmen" ? "Watchmen" : title, genre: "Action & Thriller", type: "series" })),
+            ...["A Good Girl's Guide to Murder", "Anne with an E", "Derry Girls", "Everything Now", "Freaks and Geeks", "Genera+ion", "Grand Army", "Heartbreak High", "Heartstopper", "I Am Not Okay with This", "Never Have I Ever", "Overcompensating", "Reservation Dogs", "Sex Education", "Skins", "The End of the F***ing World", "The Sex Lives of College Girls", "The Summer I Turned Pretty", "We Are Who We Are"].map(title => ({ title, genre: "Coming-of-Age", type: "series" })),
+            ...["3 Body Problem", "Andor", "Black Mirror", "Cyberpunk: Edgerunners", "Fallout", "Foundation", "Gen V", "Invincible", "Loki", "Murderbot", "Pantheon", "Scavengers Reign", "Severance", "Silo", "Station Eleven", "Stranger Things", "Sweetpea", "The 100", "The Last of Us", "The Peripheral", "Westworld"].map(title => ({ title, genre: "Sci-Fi", type: "series" })),
+            ...["Adolescence", "Arcane", "Baby Reindeer", "Beef", "Better Call Saul", "Big Little Lies", "Breaking Bad", "Daisy Jones & The Six", "Disclaimer", "Dopesick", "Euphoria", "Fellow Travelers", "House of the Dragon", "Industry", "Interview with the Vampire", "Maid", "Mare of Easttown", "Monster", "Normal People", "Ozark", "Peaky Blinders", "ipley", "Ripley", "Say Nothing", "Succession", "The Bear", "The Crown", "The Morning Show", "The Pitt", "The Queen's Gambit", "The White Lotus", "True Detective", "Unbelievable", "Winning Time"].filter(t => t !== "ipley").map(title => ({ title, genre: "Drama", type: "series" })),
+            ...["Abbott Elementary", "adults", "Adults", "Atlanta", "Barry", "Broad City", "Brooklyn Nine-Nine", "Dave", "English Teacher", "Fleabag", "Hacks", "How I Met Your Mother", "Insecure", "Jury Duty", "Mythic Quest", "New Girl", "Nobody Wants This", "Only Murders in the Building", "Parks and Recreation", "Platonic", "Poker Face", "RamY", "Ramy", "Righteous Gemstones", "Schitt's Creek", "Shrinking", "Silicon Valley", "Search Party", "Ted Lasso", "The Good Place", "The Office", "The Rehearsal", "The Studio", "Tires", "What We Do in the Shadows"].filter(t => t !== "adults" && t !== "RamY").map(title => ({ title, genre: "Comedy", type: "series" })),
+            ...["Bridgerton", "Conversations with Friends", "Dash & Lily", "Emilia", "Fleishman Is in Trouble", "Forever", "High Fidelity", "Love Life", "Modern Love", "My Lady Jane", "One Day (Series)", "Outlander", "Queen Charlotte", "Starstruck", "The Buccaneers", "The Flatshare", "The Vampire Diaries", "Too Much", "XO, Kitty"].map(title => ({ title, genre: "Romance", type: "series" }))
         ];
+
+        // Non-English titles from previous versions to remove automatically
+        const NON_ENGLISH_TITLES = new Set([
+            "parasite",
+            "anatomy of a fall",
+            "another round",
+            "portrait of a lady on fire",
+            "close",
+            "the worst person in the world",
+            "all quiet on the western front",
+            "alice in borderland",
+            "squid game",
+            "shōgun",
+            "dark",
+            "maxton hall"
+        ]);
 
         const LEGACY_ALIASES = {
             "crazy stupid love": "Crazy, Stupid, Love.",
@@ -716,7 +763,7 @@
         };
 
         // ============================================================================
-        // 3. FIREBASE INIT & MIGRATION
+        // 3. FIREBASE INIT & NON-DESTRUCTIVE CATALOG SYNC
         // ============================================================================
         async function initApp() {
             try {
@@ -733,28 +780,33 @@
                     if (snapshot.empty) {
                         state.isMigrating = true;
                         els.seedingMsg.classList.remove('hidden');
-                        const batch = writeBatch(db);
-                        const now = Date.now();
-                        SEED_CATALOG.forEach(item => {
-                            batch.set(doc(moviesCollectionRef), { ...item, watched: false, rating: 0, timestamp: now });
-                        });
-                        await batch.commit();
+                        await commitBatchedSeed(SEED_CATALOG);
+                        localStorage.setItem(`watchlist_catalog_v_${APP_ID}`, String(CATALOG_VERSION));
                         state.isMigrating = false;
                         return;
                     }
 
                     const rawDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                    const needsMigration = rawDocs.some(d => !d.type || d.genre === "TV Series" || d.title === "Christopher Nolan Movies");
+                    const savedVersion = Number(localStorage.getItem(`watchlist_catalog_v_${APP_ID}`) || 0);
+                    const needsMigration = savedVersion < CATALOG_VERSION || rawDocs.some(d =>
+                        !d.type ||
+                        d.genre === "TV Series" ||
+                        d.title === "Christopher Nolan Movies" ||
+                        NON_ENGLISH_TITLES.has((d.title || "").trim().toLowerCase())
+                    );
 
                     if (needsMigration) {
                         state.isMigrating = true;
                         els.seedingMsg.classList.remove('hidden');
                         await runSmartMigration(rawDocs);
+                        localStorage.setItem(`watchlist_catalog_v_${APP_ID}`, String(CATALOG_VERSION));
+                        els.seedingMsg.classList.add('hidden');
                         state.isMigrating = false;
                         return;
                     }
 
                     state.items = rawDocs;
+                    state.itemMap = new Map(rawDocs.map(item => [item.id, item]));
                     renderUI();
                     els.loadingContainer.classList.add('hidden');
                     els.genresContainer.classList.remove('hidden');
@@ -768,47 +820,102 @@
             }
         }
 
+        async function commitBatchedSeed(itemsToCreate) {
+            const CHUNK_SIZE = 400;
+            const now = Date.now();
+            for (let i = 0; i < itemsToCreate.length; i += CHUNK_SIZE) {
+                const batch = writeBatch(db);
+                const chunk = itemsToCreate.slice(i, i + CHUNK_SIZE);
+                chunk.forEach(item => {
+                    batch.set(doc(moviesCollectionRef), {
+                        title: item.title,
+                        genre: item.genre,
+                        type: item.type,
+                        watched: false,
+                        rating: 0,
+                        timestamp: now
+                    });
+                });
+                await batch.commit();
+            }
+        }
+
         async function runSmartMigration(existingDocs) {
-            const batch = writeBatch(db);
-            const catalogMap = new Map(SEED_CATALOG.map(item => [item.title.toLowerCase(), item]));
-            const seenCanonical = new Set();
+            const ops = [];
+            const catalogMap = new Map(SEED_CATALOG.map(item => [`${item.type}:${item.title.toLowerCase()}`, item]));
+            const catalogByTitleOnly = new Map(SEED_CATALOG.map(item => [item.title.toLowerCase(), item]));
+            const seenKeys = new Set();
 
             for (const docItem of existingDocs) {
                 const rawLower = (docItem.title || "").trim().toLowerCase();
                 const docRef = doc(moviesCollectionRef, docItem.id);
 
-                if (rawLower === "christopher nolan movies") {
-                    batch.delete(docRef);
+                if (rawLower === "christopher nolan movies" || NON_ENGLISH_TITLES.has(rawLower)) {
+                    ops.push({ type: 'delete', ref: docRef });
                     continue;
                 }
 
                 const canonicalTitle = LEGACY_ALIASES[rawLower] || docItem.title.trim();
                 const canonicalLower = canonicalTitle.toLowerCase();
+                const match = catalogByTitleOnly.get(canonicalLower);
+                const resolvedType = match ? match.type : (docItem.genre === "TV Series" ? "series" : (docItem.type || "movie"));
+                const uniqueKey = `${resolvedType}:${canonicalLower}`;
 
-                if (seenCanonical.has(canonicalLower)) {
-                    batch.delete(docRef);
+                if (seenKeys.has(uniqueKey)) {
+                    ops.push({ type: 'delete', ref: docRef });
                     continue;
                 }
-                seenCanonical.add(canonicalLower);
+                seenKeys.add(uniqueKey);
 
-                const match = catalogMap.get(canonicalLower);
-                if (match) {
-                    batch.update(docRef, { title: match.title, genre: match.genre, type: match.type });
-                } else {
-                    batch.update(docRef, {
-                        type: docItem.genre === "TV Series" ? "series" : (docItem.type || "movie"),
-                        genre: docItem.genre === "TV Series" ? "Drama" : (docItem.genre || "Drama")
+                if (match && (docItem.title !== match.title || docItem.genre !== match.genre || docItem.type !== match.type)) {
+                    ops.push({
+                        type: 'update',
+                        ref: docRef,
+                        data: { title: match.title, genre: match.genre, type: match.type }
+                    });
+                } else if (!docItem.type || docItem.genre === "TV Series") {
+                    ops.push({
+                        type: 'update',
+                        ref: docRef,
+                        data: {
+                            type: resolvedType,
+                            genre: docItem.genre === "TV Series" ? "Drama" : (docItem.genre || "Drama")
+                        }
                     });
                 }
             }
 
             const now = Date.now();
             for (const item of SEED_CATALOG) {
-                if (!seenCanonical.has(item.title.toLowerCase())) {
-                    batch.set(doc(moviesCollectionRef), { ...item, watched: false, rating: 0, timestamp: now });
+                const key = `${item.type}:${item.title.toLowerCase()}`;
+                if (!seenKeys.has(key)) {
+                    ops.push({
+                        type: 'set',
+                        ref: doc(moviesCollectionRef),
+                        data: {
+                            title: item.title,
+                            genre: item.genre,
+                            type: item.type,
+                            watched: false,
+                            rating: 0,
+                            timestamp: now
+                        }
+                    });
                 }
             }
-            await batch.commit();
+
+            // Execute in safe Firestore batch chunks (max 500 ops per batch)
+            const CHUNK_SIZE = 400;
+            for (let i = 0; i < ops.length; i += CHUNK_SIZE) {
+                const batch = writeBatch(db);
+                const chunk = ops.slice(i, i + CHUNK_SIZE);
+                for (const op of chunk) {
+                    if (op.type === 'delete') batch.delete(op.ref);
+                    else if (op.type === 'update') batch.update(op.ref, op.data);
+                    else if (op.type === 'set') batch.set(op.ref, op.data);
+                }
+                await batch.commit();
+            }
         }
 
         // ============================================================================
@@ -830,6 +937,21 @@
             return state.pendingSortMap.has(item.id)
                 ? state.pendingSortMap.get(item.id).sortWatched
                 : Boolean(item.watched);
+        }
+
+        function compareItems(a, b) {
+            const aW = getEffectiveWatched(a);
+            const bW = getEffectiveWatched(b);
+            if (aW !== bW) return aW ? 1 : -1;
+
+            if (state.sortBy === 'rating') {
+                const rDiff = (Number(b.rating) || 0) - (Number(a.rating) || 0);
+                if (rDiff !== 0) return rDiff;
+            } else if (state.sortBy === 'recent') {
+                const tDiff = (Number(b.timestamp) || 0) - (Number(a.timestamp) || 0);
+                if (tDiff !== 0) return tDiff;
+            }
+            return a.title.localeCompare(b.title);
         }
 
         function setActiveTab(tabName) {
@@ -855,7 +977,7 @@
         }
 
         // ============================================================================
-        // 5. RENDERING ENGINE (WITH GENRE PILLS & 5-STAR RATINGS)
+        // 5. RENDERING ENGINE
         // ============================================================================
         function renderGenrePills(tabItems) {
             const countsByGenre = {};
@@ -869,13 +991,12 @@
                 statusMatchedTotal++;
             }
 
-            // Reset genreFilter to 'all' if current genre has 0 items in active tab
             const availableGenres = ALL_GENRES.filter(g => tabItems.some(i => i.genre === g));
             if (state.genreFilter !== 'all' && !availableGenres.includes(state.genreFilter)) {
                 state.genreFilter = 'all';
             }
 
-            const pillsHtml = [
+            els.genrePillsBar.innerHTML = [
                 `<button type="button" data-genre="all" data-active="${state.genreFilter === 'all'}" class="ios-chip px-3.5 py-1.5 text-xs font-semibold flex items-center gap-1.5">
                     <span>All Genres</span>
                     <span class="text-[11px] opacity-60 tabular-nums">${statusMatchedTotal}</span>
@@ -891,8 +1012,6 @@
                     `;
                 })
             ].join('');
-
-            els.genrePillsBar.innerHTML = pillsHtml;
         }
 
         function buildStarRatingHtml(item) {
@@ -919,7 +1038,6 @@
                 scrollPositions[list.dataset.genreName] = list.scrollTop;
             });
 
-            // Single-pass partition by media type
             const allMovies = [];
             const allSeries = [];
             let watchedMovies = 0;
@@ -943,15 +1061,12 @@
             const totalInTab = tabItems.length;
             const watchedInTab = isMovieTab ? watchedMovies : watchedSeries;
 
-            // Update Top Nav Progress
             els.progressLabel.textContent = isMovieTab ? 'Movies' : 'Series';
             els.progressText.textContent = `${watchedInTab} / ${totalInTab}`;
             els.progressBar.style.width = `${totalInTab ? Math.round((watchedInTab / totalInTab) * 100) : 0}%`;
 
-            // Render Genre Filter Bar
             renderGenrePills(tabItems);
 
-            // Filter by Genre, Status, and Search Query
             const query = state.searchQuery.trim().toLowerCase();
             const filteredItems = tabItems.filter(item => {
                 if (state.genreFilter !== 'all' && item.genre !== state.genreFilter) return false;
@@ -965,20 +1080,15 @@
             });
 
             els.genresContainer.innerHTML = '';
-
-            // Adjust Grid Columns when solo-filtering a single genre
-            if (state.genreFilter !== 'all') {
-                els.genresContainer.className = 'grid grid-cols-1 max-w-2xl mx-auto gap-6';
-            } else {
-                els.genresContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
-            }
+            els.genresContainer.className = state.genreFilter !== 'all'
+                ? 'grid grid-cols-1 max-w-2xl mx-auto gap-6'
+                : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
 
             if (filteredItems.length === 0) {
                 renderEmptyState(isMovieTab ? allSeries : allMovies, query);
                 return;
             }
 
-            // Group by Genre
             const grouped = {};
             for (const item of filteredItems) {
                 (grouped[item.genre] ||= []).push(item);
@@ -989,16 +1099,12 @@
 
             for (const genre of sortedGenres) {
                 const itemsInGenre = grouped[genre];
-                itemsInGenre.sort((a, b) => {
-                    const aW = getEffectiveWatched(a);
-                    const bW = getEffectiveWatched(b);
-                    return aW !== bW ? (aW ? 1 : -1) : a.title.localeCompare(b.title);
-                });
+                itemsInGenre.sort(compareItems);
 
                 const completedInGenre = itemsInGenre.reduce((acc, m) => acc + (m.watched ? 1 : 0), 0);
                 const isSoloGenre = state.genreFilter === genre;
                 const card = document.createElement('div');
-                card.className = `ios-tinted-card p-5 flex flex-col h-full ${isSoloGenre ? 'max-h-[640px]' : 'max-h-[470px]'} transition-all duration-300`;
+                card.className = `ios-tinted-card p-5 flex flex-col h-full ${isSoloGenre ? 'max-h-[680px]' : 'max-h-[480px]'} transition-all duration-300`;
 
                 const rowsHtml = itemsInGenre.map(item => {
                     const isPending = state.pendingSortMap.has(item.id);
@@ -1150,7 +1256,7 @@
                 state.modalMoodGenre = 'all';
             }
 
-            const html = [
+            els.modalMoodPills.innerHTML = [
                 `<button type="button" data-mood="all" data-active="${state.modalMoodGenre === 'all'}" class="ios-mood-chip px-3 py-1 text-xs font-semibold flex items-center gap-1.5">
                     <span>All Moods</span>
                     <span class="text-[10px] opacity-60 tabular-nums">${unwatchedInTab.length}</span>
@@ -1162,13 +1268,10 @@
                     </button>
                 `)
             ].join('');
-
-            els.modalMoodPills.innerHTML = html;
         }
 
         function pickRandomUnwatched(preserveMood = false) {
             if (!preserveMood) {
-                // Default to current page genre filter if one is active
                 state.modalMoodGenre = state.genreFilter !== 'all' ? state.genreFilter : 'all';
             }
 
@@ -1260,7 +1363,9 @@
             els.clearSearchBtn.classList.toggle('flex', hasQuery);
             els.searchKbd.classList.toggle('hidden', hasQuery);
             els.searchKbd.classList.toggle('sm:inline-block', !hasQuery);
-            renderUI();
+
+            if (state.searchRaf) cancelAnimationFrame(state.searchRaf);
+            state.searchRaf = requestAnimationFrame(renderUI);
         }
 
         els.searchInput.addEventListener('input', syncSearchUI);
@@ -1270,7 +1375,11 @@
             els.searchInput.focus();
         });
 
-        // Segmented Control & Genre Pill Delegation
+        els.sortSelect.addEventListener('change', () => {
+            state.sortBy = els.sortSelect.value;
+            renderUI();
+        });
+
         els.typeTabs.addEventListener('click', (e) => {
             const btn = e.target.closest('button[data-type]');
             if (btn && btn.dataset.type !== state.activeTab) setActiveTab(btn.dataset.type);
@@ -1285,11 +1394,9 @@
             const btn = e.target.closest('button[data-genre]');
             if (!btn) return;
             const clickedGenre = btn.dataset.genre;
-            // Clicking an already-active genre chip toggles back to 'all'
             setGenreFilter(state.genreFilter === clickedGenre ? 'all' : clickedGenre);
         });
 
-        // Mood Pills inside Surprise Me Modal
         els.modalMoodPills.addEventListener('click', (e) => {
             const btn = e.target.closest('button[data-mood]');
             if (!btn) return;
@@ -1297,7 +1404,6 @@
             pickRandomUnwatched(true);
         });
 
-        // Global Keyboard Shortcuts
         document.addEventListener('keydown', (e) => {
             if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
                 e.preventDefault();
@@ -1323,7 +1429,6 @@
             }
         });
 
-        // Random Modal Controls
         els.pickRandomBtn.addEventListener('click', () => pickRandomUnwatched(false));
         els.spinAgainBtn.addEventListener('click', () => pickRandomUnwatched(true));
         els.closeModalBtn.addEventListener('click', closeRandomModal);
@@ -1374,7 +1479,6 @@
             els.markWatchedModalBtn.disabled = false;
         });
 
-        // Edit Modal Controls
         els.cancelEditBtn.addEventListener('click', closeEditModal);
         els.editModal.addEventListener('click', (e) => {
             if (e.target === els.editModal) closeEditModal();
@@ -1400,7 +1504,6 @@
             }
         });
 
-        // Add Item Form
         els.addForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!auth.currentUser) return;
@@ -1430,7 +1533,6 @@
             els.addBtn.disabled = false;
         });
 
-        // Toggle Checkbox (with 2-second delayed sort lock)
         els.genresContainer.addEventListener('change', async (e) => {
             if (!e.target.classList.contains('checkbox-custom')) return;
             const docId = e.target.dataset.id;
@@ -1461,9 +1563,7 @@
             }
         });
 
-        // Grid Click Delegation: Star Ratings, Edit Button, Delete Button, Genre Header Solo-Filter
         els.genresContainer.addEventListener('click', async (e) => {
-            // 1. Genre Card Header Click (Solo Filter)
             const genreHeaderBtn = e.target.closest('button[data-genre-header]');
             if (genreHeaderBtn) {
                 const targetGenre = genreHeaderBtn.dataset.genreHeader;
@@ -1471,12 +1571,11 @@
                 return;
             }
 
-            // 2. Star Rating Click
             const rateBtn = e.target.closest('.rate-star-btn');
             if (rateBtn && auth.currentUser) {
                 const docId = rateBtn.dataset.id;
                 const starValue = Number(rateBtn.dataset.star);
-                const item = state.items.find(i => i.id === docId);
+                const item = state.itemMap.get(docId);
                 const nextRating = (item && item.rating === starValue) ? 0 : starValue;
                 try {
                     await updateDoc(doc(moviesCollectionRef, docId), { rating: nextRating });
@@ -1486,19 +1585,17 @@
                 return;
             }
 
-            // 3. Edit Button Click
             const editBtn = e.target.closest('.edit-btn');
             if (editBtn) {
-                const item = state.items.find(i => i.id === editBtn.dataset.id);
+                const item = state.itemMap.get(editBtn.dataset.id);
                 if (item) openEditModal(item);
                 return;
             }
 
-            // 4. Delete Button Click (with Undo support)
             const deleteBtn = e.target.closest('.delete-btn');
             if (deleteBtn && auth.currentUser) {
                 const docId = deleteBtn.dataset.id;
-                const itemToDelete = state.items.find(i => i.id === docId);
+                const itemToDelete = state.itemMap.get(docId);
                 deleteBtn.disabled = true;
                 try {
                     await deleteDoc(doc(moviesCollectionRef, docId));
@@ -1510,16 +1607,14 @@
             }
         });
 
-        // Double-Click Row to Edit
         els.genresContainer.addEventListener('dblclick', (e) => {
             if (e.target.closest('input, button')) return;
             const row = e.target.closest('li[data-id]');
             if (!row) return;
-            const item = state.items.find(i => i.id === row.dataset.id);
+            const item = state.itemMap.get(row.dataset.id);
             if (item) openEditModal(item);
         });
 
-        // Undo Delete Action
         els.undoBtn.addEventListener('click', async () => {
             if (!state.lastDeletedItem || !auth.currentUser) return;
             const item = state.lastDeletedItem;
@@ -1536,7 +1631,6 @@
             }
         });
 
-        // Export Library JSON Backup
         els.exportBtn.addEventListener('click', () => {
             const payload = JSON.stringify(state.items, null, 2);
             const blob = new Blob([payload], { type: 'application/json' });
